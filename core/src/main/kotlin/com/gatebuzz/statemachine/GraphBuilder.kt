@@ -28,6 +28,7 @@ class GraphBuilder {
 
             states.forEach { sb ->
                 allNodes[sb.id]?.let { n ->
+                    sb.eventProducer?.let { n.decision = Decision { node -> sb.eventProducer!!(node) } }
                     sb.enter?.let { n.onEnter = it }
                     sb.exit?.let { n.onExit = it }
                 }
@@ -97,6 +98,7 @@ class StateBuilder(val id: State) {
     var enter: NodeVisitor? = null
     var exit: NodeVisitor? = null
     var allowed: MutableList<State> = mutableListOf()
+    var eventProducer: ((Node) -> Event?)? = null
 
     fun <T : Event> on(event: T, initBlock: EdgeBuilder.() -> Unit) {
         events[event] = EdgeBuilder().apply(initBlock)
@@ -104,6 +106,10 @@ class StateBuilder(val id: State) {
 
     fun <T : State> onTransitionTo(state: T, initBlock: EdgeBuilder.() -> Unit) {
         edges[state] = EdgeBuilder(state).apply(initBlock)
+    }
+
+    fun decision(producer: (Node)->Event?) {
+        this.eventProducer = producer
     }
 
     fun allNodes(): Map<State, Node> = mutableSetOf<Node>().apply {

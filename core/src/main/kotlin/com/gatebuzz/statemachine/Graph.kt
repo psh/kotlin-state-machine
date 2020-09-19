@@ -6,6 +6,7 @@ import com.gatebuzz.statemachine.MachineState.Inactive
 data class Node(val id: State) {
     var onEnter: NodeVisitor = NodeVisitor { }
     var onExit: NodeVisitor = NodeVisitor { }
+    var decision: Decision? = null
 }
 
 data class Edge(val from: Node, val to: Node) {
@@ -116,10 +117,15 @@ class Graph internal constructor(
             override fun success() {
                 notifyStateChange(MachineState.Traversing(registeredEdge))
                 registeredEdge.onExit.accept(registeredEdge)
-                currentState = Dwelling(edge.to).apply {
+                currentState = Dwelling(edge.to)
+                notifyStateChange(currentState)
+                if (edge.to.decision != null) {
+                    edge.to.decision?.decide(edge.to)?.let {
+                        consume(it)
+                    }
+                } else {
                     edge.to.onEnter.accept(edge.to)
                 }
-                notifyStateChange(currentState)
             }
 
             override fun failAndExit() {
@@ -128,9 +134,8 @@ class Graph internal constructor(
             }
 
             override fun failure() {
-                currentState = Dwelling(edge.from).apply {
-                    edge.from.onEnter.accept(edge.from)
-                }
+                currentState = Dwelling(edge.from)
+                edge.from.onEnter.accept(edge.from)
                 notifyStateChange(currentState)
             }
         })

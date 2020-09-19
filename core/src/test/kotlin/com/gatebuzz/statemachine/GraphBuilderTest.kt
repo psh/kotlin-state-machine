@@ -55,12 +55,12 @@ class GraphBuilderTest {
     }
 
     @Test
-    fun `available edges without events`(){
+    fun `available edges without events`() {
         val testObject = graph {
             state(StateA) {
                 allows(StateB)
             }
-            state(StateB){
+            state(StateB) {
                 allows(StateA, StateC)
             }
             state(StateC) {
@@ -622,6 +622,70 @@ class GraphBuilderTest {
         testObject.consume(OtherTestEvent)
 
         verifyZeroInteractions(edgeActionAB, edgeActionBA)
+    }
+    //endregion
+
+    //region decision states
+    @Test
+    fun `decisions produce events causing transitions`() {
+        val testObject = graph {
+            initialState(StateA)
+            state(StateA) {
+                allows(StateB)
+            }
+            state(StateB) {
+                decision { OtherTestEvent }
+                on(TestEvent) { transitionTo(StateA) }
+                on(OtherTestEvent) { transitionTo(StateC) }
+            }
+            state(StateC)
+        }
+        testObject.start()
+
+        testObject.transitionTo(StateB)
+
+        assertEquals(StateC, testObject.currentState.id)
+    }
+
+    @Test
+    fun `null result from a decision causes no transition`() {
+        val testObject = graph {
+            initialState(StateA)
+            state(StateA) {
+                allows(StateB)
+            }
+            state(StateB) {
+                decision { null }
+                on(TestEvent) { transitionTo(StateA) }
+                on(OtherTestEvent) { transitionTo(StateC) }
+            }
+            state(StateC)
+        }
+        testObject.start()
+
+        testObject.transitionTo(StateB)
+
+        assertEquals(StateB, testObject.currentState.id)
+    }
+
+    @Test
+    fun `unhandled event from a decision causes no transition`() {
+        val testObject = graph {
+            initialState(StateA)
+            state(StateA) {
+                allows(StateB)
+            }
+            state(StateB) {
+                decision { TestEvent }
+                on(OtherTestEvent) { transitionTo(StateC) }
+            }
+            state(StateC)
+        }
+        testObject.start()
+
+        testObject.transitionTo(StateB)
+
+        assertEquals(StateB, testObject.currentState.id)
     }
     //endregion
 }

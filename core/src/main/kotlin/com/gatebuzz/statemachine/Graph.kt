@@ -122,6 +122,11 @@ class Graph internal constructor(
                 notifyStateChange(currentState)
             }
 
+            override fun failAndExit() {
+                registeredEdge.onExit.accept(registeredEdge)
+                failure()
+            }
+
             override fun failure() {
                 currentState = Dwelling(edge.from).apply {
                     edge.from.onEnter.accept(edge.from)

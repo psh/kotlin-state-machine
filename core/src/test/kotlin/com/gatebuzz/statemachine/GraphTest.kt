@@ -1,5 +1,6 @@
 package com.gatebuzz.statemachine
 
+import com.gatebuzz.statemachine.TestEvents.OtherTestEvent
 import com.nhaarman.mockitokotlin2.*
 import com.gatebuzz.statemachine.TestState.*
 import org.junit.Assert.*
@@ -392,5 +393,87 @@ class GraphTest {
 
         verifyZeroInteractions(edgeAB.action, edgeBA.action)
     }
+    //endregion
+
+    //region decision states
+    @Test
+    fun `decisions take precedence over onEnter`() {
+        nodeA.onEnter = mock()
+        nodeB.decision = mock()
+        nodeB.onEnter = mock()
+        val testObject = Graph().apply {
+            initialState = MachineState.Dwelling(nodeA)
+            add(nodeA)
+            add(nodeB)
+        }
+        testObject.start()
+
+        testObject.transitionTo(nodeB)
+
+        inOrder(nodeA.onEnter, nodeB.decision!!) {
+            verify(nodeA.onEnter).accept(nodeA)
+            verify(nodeB.decision)!!.decide(nodeB)
+        }
+        verify(nodeB.onEnter, never()).accept(any())
+    }
+
+    @Test
+    fun `decisions trigger events`() {
+        nodeA.onEnter = mock()
+        nodeB.decision = mock()
+        nodeB.onEnter = mock()
+        nodeB.onExit = mock()
+        nodeC.onEnter = mock()
+        whenever(nodeB.decision!!.decide(any())).thenReturn(OtherTestEvent)
+
+        val testObject = Graph().apply {
+            initialState = MachineState.Dwelling(nodeA)
+            add(nodeA)
+            add(nodeB)
+            add(nodeC)
+            addEvent(OtherTestEvent, Edge(nodeB, nodeC))
+        }
+        testObject.start()
+
+        testObject.transitionTo(nodeB)
+
+        inOrder(nodeA.onEnter, nodeB.decision!!, nodeB.onExit, nodeC.onEnter) {
+            verify(nodeA.onEnter).accept(nodeA)
+            verify(nodeB.decision)!!.decide(nodeB)
+            verify(nodeB.onExit).accept(nodeB)
+            verify(nodeC.onEnter).accept(nodeC)
+        }
+        verify(nodeB.onEnter, never()).accept(any())
+    }
+
+    @Test
+    fun `null decisions have no effect`() {
+        nodeA.onEnter = mock()
+        nodeB.decision = mock()
+        nodeB.onEnter = mock()
+        nodeB.onExit = mock()
+        nodeC.onEnter = mock()
+        whenever(nodeB.decision!!.decide(any())).thenReturn(null)
+
+        val testObject = Graph().apply {
+            initialState = MachineState.Dwelling(nodeA)
+            add(nodeA)
+            add(nodeB)
+            add(nodeC)
+            addEvent(OtherTestEvent, Edge(nodeB, nodeC))
+        }
+        testObject.start()
+
+        testObject.transitionTo(nodeB)
+
+        inOrder(nodeA.onEnter, nodeB.decision!!) {
+            verify(nodeA.onEnter).accept(nodeA)
+            verify(nodeB.decision)!!.decide(nodeB)
+        }
+        verify(nodeB.onEnter, never()).accept(any())
+        verify(nodeB.onExit, never()).accept(nodeB)
+        verify(nodeC.onEnter, never()).accept(nodeC)
+    }
+
     //endregion
 }

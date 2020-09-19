@@ -163,6 +163,26 @@ In this scenario, consuming the `OnMelted` event will trigger a transition which
 3. `Edge` Solid --> Liquid OnExit
 4. `Node` Liquid OnEnter
 
+## Decision States
+If you include a `decision` in a state definition, it will be executed in preference to the normal `onEnter`.  The return value from the
+decision lambda will be processed as if `consume()` had been called, with all the normal event handling / transition rules.  A return 
+value `null` or other unhandled event wont cause a transition.
+  
+```kotlin
+graph {
+    initialState(StateA)
+    state(StateA) {
+        allows(StateB)
+    }
+    state(StateB) {
+        decision { /* returns an event, or null */ }
+        on(TestEvent) { transitionTo(StateA) }
+        on(OtherTestEvent) { transitionTo(StateC) }
+    }
+    state(StateC)
+}
+```
+
 ## Conditional & Long Running Transitions
 
 By default, state transitions are instantaneous and never fail.  You can supply a block of code that will override that behavior, allowing for
@@ -250,7 +270,7 @@ fun `freezing should move us from liquid to solid`() {
     assertEquals(Solid, stateMachine.currentState.id)
 }
 ```
-The `start()` method can be called at any time to reset the state machine to a given node in the graph.
+The `start()` method can be called at any time (and even multiple times) to reset the state machine to a given node in the graph.
 
 ## Observing State Changes
 

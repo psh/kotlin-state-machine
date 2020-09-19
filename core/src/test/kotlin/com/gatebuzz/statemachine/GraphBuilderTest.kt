@@ -530,6 +530,45 @@ class GraphBuilderTest {
         verify(exitEdgeAB, never()).accept(edgeAB)
         verify(enterB, never()).accept(nodeB)
     }
+
+    @Test
+    fun `traversal fail but exit still desired`() {
+        val enterA: NodeVisitor = mock()
+        val exitA: NodeVisitor = mock()
+        val enterB: NodeVisitor = mock()
+        val exitB: NodeVisitor = mock()
+        val enterEdgeAB: EdgeVisitor = mock()
+        val exitEdgeAB: EdgeVisitor = mock()
+        val testObject = graph {
+            initialState(StateA)
+            state(StateA) {
+                onEnter(enterA::accept)
+                onExit(exitA::accept)
+                on(TestEvent) {
+                    onEnter(enterEdgeAB::accept)
+                    onExit(exitEdgeAB::accept)
+                    transitionTo(StateB) {
+                        it.failAndExit()
+                    }
+                }
+            }
+            state(StateB) {
+                onEnter(enterB::accept)
+                onExit(exitB::accept)
+            }
+        }
+        testObject.start()
+        verify(enterA).accept(nodeA)
+
+        testObject.transitionTo(nodeB)
+
+        inOrder(enterB, enterEdgeAB, exitA, exitEdgeAB) {
+            verify(exitA).accept(nodeA)
+            verify(enterEdgeAB).accept(edgeAB)
+            verify(exitEdgeAB).accept(edgeAB)
+        }
+        verify(enterB, never()).accept(nodeB)
+    }
     //endregion
 
     //region event driven transition

@@ -4,15 +4,15 @@ import com.gatebuzz.statemachine.MachineState.Dwelling
 import com.gatebuzz.statemachine.MachineState.Inactive
 
 data class Node(val id: State) {
-    var onEnter: NodeVisitor = NodeVisitor { }
-    var onExit: NodeVisitor = NodeVisitor { }
+    var onEnter: NodeVisitor = NodeVisitor { _, _ -> }
+    var onExit: NodeVisitor = NodeVisitor { _, _ -> }
     var decision: Decision? = null
 }
 
 data class Edge(val from: Node, val to: Node) {
     var onEnter: EdgeVisitor = EdgeVisitor { }
     var onExit: EdgeVisitor = EdgeVisitor { }
-    var action: EdgeAction = EdgeAction(ResultEmitter::success)
+    var action: EdgeAction = EdgeAction { trigger, result -> result.success(trigger) }
 }
 
 sealed class MachineState {
@@ -49,7 +49,7 @@ class Graph internal constructor(
         currentState = startingState
         if (currentState is Dwelling) {
             val state = currentState as Dwelling
-            state.node.onEnter.accept(state.node)
+            state.node.onEnter.accept(state.node, null)
         }
         notifyStateChange(currentState)
         return this
@@ -59,19 +59,19 @@ class Graph internal constructor(
         val edge = edgeTriggers[event]
         edge?.let {
             if (currentState is Dwelling && (currentState as Dwelling).node == edge.from) {
-                moveViaEdge(edge)
+                moveViaEdge(edge, event)
             }
         }
     }
 
-    fun transitionTo(state: State): Node? {
+    fun transitionTo(state: State, trigger: Event? = null): Node? {
         val node = findNode(state) ?: return null
-        return doTransition(node)
+        return doTransition(node, trigger)
     }
 
-    fun transitionTo(node: Node): Node? {
+    fun transitionTo(node: Node, trigger: Event? = null): Node? {
         val validNode = findNode(node.id) ?: return null
-        return doTransition(validNode)
+        return doTransition(validNode, trigger)
     }
 
     fun addStateChangeListener(listener: StateTransitionListener) {
@@ -79,13 +79,15 @@ class Graph internal constructor(
     }
 
     fun addStateListener(listener: StateListener) {
-        listeners.add(object : StateTransitionListener {
-            override fun onStateTransition(state: MachineState) {
-                if (state is Dwelling) {
-                    listener.onState(state.id)
+        listeners.add(
+            object : StateTransitionListener {
+                override fun onStateTransition(state: MachineState) {
+                    if (state is Dwelling) {
+                        listener.onState(state.id)
+                    }
                 }
             }
-        })
+        )
     }
 
     internal fun add(node: Node) {
@@ -100,51 +102,54 @@ class Graph internal constructor(
         edgeTriggers[event] = edge
     }
 
-    private fun doTransition(node: Node): Node? {
+    private fun doTransition(node: Node, trigger: Event?): Node? {
         return when (currentState) {
-            is Dwelling -> moveViaEdge(Edge((currentState as Dwelling).node, node))
-            is Inactive -> moveDirectly(node)
+            is Dwelling -> moveViaEdge(Edge((currentState as Dwelling).node, node), trigger)
+            is Inactive -> moveDirectly(node, trigger)
             else -> null
         }
     }
 
-    private fun moveViaEdge(edge: Edge): Node {
+    private fun moveViaEdge(edge: Edge, trigger: Event?): Node {
         val registeredEdge = edges.find { it == edge } ?: edge
-        registeredEdge.from.onExit.accept(registeredEdge.from)
+        registeredEdge.from.onExit.accept(registeredEdge.from, trigger)
 
         registeredEdge.onEnter.accept(registeredEdge)
-        registeredEdge.action.execute(object : ResultEmitter {
-            override fun success() {
-                notifyStateChange(MachineState.Traversing(registeredEdge))
-                registeredEdge.onExit.accept(registeredEdge)
-                currentState = Dwelling(edge.to)
-                notifyStateChange(currentState)
-                if (edge.to.decision != null) {
-                    edge.to.decision?.decide(edge.to)?.let {
-                        consume(it)
+        registeredEdge.action.execute(
+            trigger,
+            object : ResultEmitter {
+                override fun success(trigger: Event?) {
+                    notifyStateChange(MachineState.Traversing(registeredEdge))
+                    registeredEdge.onExit.accept(registeredEdge)
+                    currentState = Dwelling(edge.to)
+                    notifyStateChange(currentState)
+                    if (edge.to.decision != null) {
+                        edge.to.decision?.decide(edge.to, trigger)?.let {
+                            consume(it)
+                        }
+                    } else {
+                        edge.to.onEnter.accept(edge.to, trigger)
                     }
-                } else {
-                    edge.to.onEnter.accept(edge.to)
+                }
+
+                override fun failAndExit(trigger: Event?) {
+                    registeredEdge.onExit.accept(registeredEdge)
+                    failure(trigger)
+                }
+
+                override fun failure(trigger: Event?) {
+                    currentState = Dwelling(edge.from)
+                    edge.from.onEnter.accept(edge.from, trigger)
+                    notifyStateChange(currentState)
                 }
             }
-
-            override fun failAndExit() {
-                registeredEdge.onExit.accept(registeredEdge)
-                failure()
-            }
-
-            override fun failure() {
-                currentState = Dwelling(edge.from)
-                edge.from.onEnter.accept(edge.from)
-                notifyStateChange(currentState)
-            }
-        })
+        )
         return edge.to
     }
 
-    private fun moveDirectly(node: Node): Node {
+    private fun moveDirectly(node: Node, trigger: Event?): Node {
         currentState = Dwelling(node)
-        node.onEnter.accept(node)
+        node.onEnter.accept(node, trigger)
         notifyStateChange(currentState)
         return node
     }

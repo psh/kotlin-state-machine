@@ -1,7 +1,7 @@
 package com.gatebuzz.statemachine
 
 interface ResultEmitter {
-    fun success()
-    fun failure()
-    fun failAndExit()
+    fun success(trigger: Event?)
+    fun failure(trigger: Event?)
+    fun failAndExit(trigger: Event?)
 }

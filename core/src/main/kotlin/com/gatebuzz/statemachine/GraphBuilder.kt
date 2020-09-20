@@ -28,7 +28,9 @@ class GraphBuilder {
 
             states.forEach { sb ->
                 allNodes[sb.id]?.let { n ->
-                    sb.eventProducer?.let { n.decision = Decision { node -> sb.eventProducer!!(node) } }
+                    sb.eventProducer?.let {
+                        n.decision = Decision { node: Node, trigger: Event? -> sb.eventProducer!!(node, trigger) }
+                    }
                     sb.enter?.let { n.onEnter = it }
                     sb.exit?.let { n.onExit = it }
                 }
@@ -62,15 +64,19 @@ class GraphBuilder {
 
     private fun Graph.addListeners() {
         transitions.forEach {
-            addStateChangeListener(object : StateTransitionListener {
-                override fun onStateTransition(state: MachineState) = it(state)
-            })
+            addStateChangeListener(
+                object : StateTransitionListener {
+                    override fun onStateTransition(state: MachineState) = it(state)
+                }
+            )
         }
 
         stateChanges.forEach {
-            addStateListener(object : StateListener {
-                override fun onState(state: State) = it(state)
-            })
+            addStateListener(
+                object : StateListener {
+                    override fun onState(state: State) = it(state)
+                }
+            )
         }
     }
 
@@ -98,7 +104,7 @@ class StateBuilder(val id: State) {
     var enter: NodeVisitor? = null
     var exit: NodeVisitor? = null
     var allowed: MutableList<State> = mutableListOf()
-    var eventProducer: ((Node) -> Event?)? = null
+    var eventProducer: ((Node, Event?) -> Event?)? = null
 
     fun <T : Event> on(event: T, initBlock: EdgeBuilder.() -> Unit) {
         events[event] = EdgeBuilder().apply(initBlock)
@@ -108,7 +114,7 @@ class StateBuilder(val id: State) {
         edges[state] = EdgeBuilder(state).apply(initBlock)
     }
 
-    fun decision(producer: (Node)->Event?) {
+    fun decision(producer: (Node, Event?) -> Event?) {
         this.eventProducer = producer
     }
 
@@ -119,12 +125,12 @@ class StateBuilder(val id: State) {
         addAll(events.map { Node(it.value.destination!!) })
     }.associateBy { it.id }
 
-    fun onEnter(action: (Node) -> Unit) {
-        enter = NodeVisitor { action(it) }
+    fun onEnter(action: (Node, Event?) -> Unit) {
+        enter = NodeVisitor { node, trigger -> action(node, trigger) }
     }
 
-    fun onExit(action: (Node) -> Unit) {
-        exit = NodeVisitor { action(it) }
+    fun onExit(action: (Node, Event?) -> Unit) {
+        exit = NodeVisitor { node, trigger -> action(node, trigger) }
     }
 
     fun allows(vararg states: State) {
@@ -134,17 +140,20 @@ class StateBuilder(val id: State) {
 
 @EdgeBuilderMarker
 class EdgeBuilder(var destination: State? = null) {
-    var enter: EdgeVisitor? = null
-    var exit: EdgeVisitor? = null
-    var transitionAction: EdgeAction = EdgeAction { it.success() }
+    private var enter: EdgeVisitor? = null
+    private var exit: EdgeVisitor? = null
+    private var transitionAction: EdgeAction = EdgeAction { trigger, result -> result.success(trigger) }
 
-    fun transitionTo(id: State, action: (ResultEmitter) -> Unit = { it.success() }) {
+    fun transitionTo(
+        id: State,
+        action: (Event?, ResultEmitter) -> Unit = { trigger, result -> result.success(trigger) }
+    ) {
         destination = id
-        transitionAction = EdgeAction { action(it) }
+        transitionAction = EdgeAction { trigger, result -> action(trigger, result) }
     }
 
-    fun execute(action: (ResultEmitter) -> Unit) {
-        transitionAction = EdgeAction { action(it) }
+    fun execute(action: (Event?, ResultEmitter) -> Unit) {
+        transitionAction = EdgeAction { trigger, result -> action(trigger, result) }
     }
 
     fun onEnter(action: (Edge) -> Unit) {

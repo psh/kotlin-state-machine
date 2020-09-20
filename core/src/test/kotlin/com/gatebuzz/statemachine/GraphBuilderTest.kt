@@ -191,7 +191,7 @@ class GraphBuilderTest {
 
         testObject.start()
 
-        verify(onEnter).accept(nodeA)
+        verify(onEnter).accept(nodeA, null)
     }
 
     @Test
@@ -208,8 +208,8 @@ class GraphBuilderTest {
         testObject.transitionTo(nodeB)
 
         inOrder(onEnterA, onEnterB) {
-            verify(onEnterA).accept(nodeA)
-            verify(onEnterB).accept(nodeB)
+            verify(onEnterA).accept(nodeA, null)
+            verify(onEnterB).accept(nodeB, null)
         }
     }
 
@@ -234,9 +234,9 @@ class GraphBuilderTest {
         testObject.transitionTo(nodeB)
 
         inOrder(onEnterA, onEnterB, onEnterEdgeAB) {
-            verify(onEnterA).accept(nodeA)
+            verify(onEnterA).accept(nodeA, null)
             verify(onEnterEdgeAB).accept(edgeAB)
-            verify(onEnterB).accept(nodeB)
+            verify(onEnterB).accept(nodeB, null)
         }
     }
 
@@ -252,7 +252,7 @@ class GraphBuilderTest {
 
         testObject.transitionTo(nodeB)
 
-        verify(onExit).accept(nodeA)
+        verify(onExit).accept(nodeA, null)
     }
 
     @Test
@@ -276,7 +276,7 @@ class GraphBuilderTest {
         testObject.transitionTo(nodeB)
 
         inOrder(exitA, exitB, exitEdgeAB) {
-            verify(exitA).accept(nodeA)
+            verify(exitA).accept(nodeA, null)
             verify(exitEdgeAB).accept(edgeAB)
         }
     }
@@ -306,15 +306,15 @@ class GraphBuilderTest {
             }
         }
         testObject.start()
-        verify(enterA).accept(nodeA)
+        verify(enterA).accept(nodeA, null)
 
         testObject.transitionTo(nodeB)
 
         inOrder(enterB, enterEdgeAB, exitA, exitEdgeAB) {
-            verify(exitA).accept(nodeA)
+            verify(exitA).accept(nodeA, null)
             verify(enterEdgeAB).accept(edgeAB)
             verify(exitEdgeAB).accept(edgeAB)
-            verify(enterB).accept(nodeB)
+            verify(enterB).accept(nodeB, null)
         }
     }
 
@@ -343,15 +343,15 @@ class GraphBuilderTest {
             }
         }
         testObject.start()
-        verify(enterA).accept(nodeA)
+        verify(enterA).accept(nodeA, null)
 
         testObject.transitionTo(nodeB)
 
         inOrder(enterB, enterEdgeAB, exitA, exitEdgeAB) {
-            verify(exitA).accept(nodeA)
+            verify(exitA).accept(nodeA, null)
             verify(enterEdgeAB).accept(edgeAB)
             verify(exitEdgeAB).accept(edgeAB)
-            verify(enterB).accept(nodeB)
+            verify(enterB).accept(nodeB, null)
         }
     }
 
@@ -374,13 +374,13 @@ class GraphBuilderTest {
             }
         }
         testObject.start()
-        verify(enterA).accept(nodeA)
+        verify(enterA).accept(nodeA, null)
 
         testObject.transitionTo(nodeB)
 
         inOrder(enterB, exitA) {
-            verify(exitA).accept(nodeA)
-            verify(enterB).accept(nodeB)
+            verify(exitA).accept(nodeA, null)
+            verify(enterB).accept(nodeB, null)
         }
     }
     //endregion
@@ -393,9 +393,9 @@ class GraphBuilderTest {
             initialState(StateA)
             state(StateA) {
                 on(TestEvent) {
-                    transitionTo(StateB) {
-                        edgeAction.execute(it)
-                        it.success()
+                    transitionTo(StateB) { trigger, result ->
+                        edgeAction.execute(trigger, result)
+                        result.success(trigger)
                     }
                 }
             }
@@ -405,7 +405,7 @@ class GraphBuilderTest {
 
         testObject.transitionTo(nodeB)
 
-        verify(edgeAction).execute(isA())
+        verify(edgeAction).execute(anyOrNull(), isA())
     }
 
     @Test
@@ -416,9 +416,9 @@ class GraphBuilderTest {
             state(StateA) {
                 on(TestEvent) {
                     transitionTo(StateB)
-                    execute {
-                        edgeAction.execute(it)
-                        it.success()
+                    execute { trigger, result ->
+                        edgeAction.execute(trigger, result)
+                        result.success(trigger)
                     }
                 }
             }
@@ -428,7 +428,7 @@ class GraphBuilderTest {
 
         testObject.transitionTo(nodeB)
 
-        verify(edgeAction).execute(isA())
+        verify(edgeAction).execute(anyOrNull(), isA())
     }
 
     @Test
@@ -438,9 +438,9 @@ class GraphBuilderTest {
             initialState(StateA)
             state(StateA) {
                 onTransitionTo(StateB) {
-                    execute {
-                        edgeAction.execute(it)
-                        it.success()
+                    execute { trigger, result ->
+                        edgeAction.execute(trigger, result)
+                        result.success(trigger)
                     }
                 }
             }
@@ -450,7 +450,7 @@ class GraphBuilderTest {
 
         testObject.transitionTo(StateB)
 
-        verify(edgeAction).execute(isA())
+        verify(edgeAction).execute(anyOrNull(), isA())
     }
 
     @Test
@@ -469,8 +469,8 @@ class GraphBuilderTest {
                 on(TestEvent) {
                     onEnter(enterEdgeAB::accept)
                     onExit(exitEdgeAB::accept)
-                    transitionTo(StateB) {
-                        it.success()
+                    transitionTo(StateB) { trigger, result ->
+                        result.success(trigger)
                     }
                 }
             }
@@ -480,15 +480,15 @@ class GraphBuilderTest {
             }
         }
         testObject.start()
-        verify(enterA).accept(nodeA)
+        verify(enterA).accept(nodeA, null)
 
         testObject.transitionTo(nodeB)
 
         inOrder(enterB, enterEdgeAB, exitA, exitEdgeAB) {
-            verify(exitA).accept(nodeA)
+            verify(exitA).accept(nodeA, null)
             verify(enterEdgeAB).accept(edgeAB)
             verify(exitEdgeAB).accept(edgeAB)
-            verify(enterB).accept(nodeB)
+            verify(enterB).accept(nodeB, null)
         }
     }
 
@@ -508,8 +508,8 @@ class GraphBuilderTest {
                 on(TestEvent) {
                     onEnter(enterEdgeAB::accept)
                     onExit(exitEdgeAB::accept)
-                    transitionTo(StateB) {
-                        it.failure()
+                    transitionTo(StateB) { trigger, result ->
+                        result.failure(trigger)
                     }
                 }
             }
@@ -519,16 +519,16 @@ class GraphBuilderTest {
             }
         }
         testObject.start()
-        verify(enterA).accept(nodeA)
+        verify(enterA).accept(nodeA, null)
 
         testObject.transitionTo(nodeB)
 
         inOrder(enterB, enterEdgeAB, exitA, exitEdgeAB) {
-            verify(exitA).accept(nodeA)
+            verify(exitA).accept(nodeA, null)
             verify(enterEdgeAB).accept(edgeAB)
         }
         verify(exitEdgeAB, never()).accept(edgeAB)
-        verify(enterB, never()).accept(nodeB)
+        verify(enterB, never()).accept(nodeB, null)
     }
 
     @Test
@@ -547,8 +547,8 @@ class GraphBuilderTest {
                 on(TestEvent) {
                     onEnter(enterEdgeAB::accept)
                     onExit(exitEdgeAB::accept)
-                    transitionTo(StateB) {
-                        it.failAndExit()
+                    transitionTo(StateB) { trigger, result ->
+                        result.failAndExit(trigger)
                     }
                 }
             }
@@ -558,16 +558,16 @@ class GraphBuilderTest {
             }
         }
         testObject.start()
-        verify(enterA).accept(nodeA)
+        verify(enterA).accept(nodeA, null)
 
         testObject.transitionTo(nodeB)
 
         inOrder(enterB, enterEdgeAB, exitA, exitEdgeAB) {
-            verify(exitA).accept(nodeA)
+            verify(exitA).accept(nodeA, null)
             verify(enterEdgeAB).accept(edgeAB)
             verify(exitEdgeAB).accept(edgeAB)
         }
-        verify(enterB, never()).accept(nodeB)
+        verify(enterB, never()).accept(nodeB, null)
     }
     //endregion
 
@@ -579,9 +579,9 @@ class GraphBuilderTest {
             initialState(StateA)
             state(StateA) {
                 on(TestEvent) {
-                    transitionTo(StateB) {
-                        edgeAction.execute(it)
-                        it.success()
+                    transitionTo(StateB) { trigger, result ->
+                        edgeAction.execute(trigger, result)
+                        result.success(trigger)
                     }
                 }
             }
@@ -591,7 +591,7 @@ class GraphBuilderTest {
 
         testObject.consume(TestEvent)
 
-        verify(edgeAction).execute(isA())
+        verify(edgeAction).execute(anyOrNull(), isA())
     }
 
     @Test
@@ -602,17 +602,17 @@ class GraphBuilderTest {
             initialState(StateA)
             state(StateA) {
                 on(TestEvent) {
-                    transitionTo(StateB) {
-                        edgeActionAB.execute(it)
-                        it.success()
+                    transitionTo(StateB) { trigger, result ->
+                        edgeActionAB.execute(trigger, result)
+                        result.success(trigger)
                     }
                 }
             }
             state(StateB) {
                 on(OtherTestEvent) {
-                    transitionTo(StateA) {
-                        edgeActionBA.execute(it)
-                        it.success()
+                    transitionTo(StateA) { trigger, result ->
+                        edgeActionBA.execute(trigger, result)
+                        result.success(trigger)
                     }
                 }
             }
@@ -634,7 +634,7 @@ class GraphBuilderTest {
                 allows(StateB)
             }
             state(StateB) {
-                decision { OtherTestEvent }
+                decision { _, _ -> OtherTestEvent }
                 on(TestEvent) { transitionTo(StateA) }
                 on(OtherTestEvent) { transitionTo(StateC) }
             }
@@ -655,7 +655,7 @@ class GraphBuilderTest {
                 allows(StateB)
             }
             state(StateB) {
-                decision { null }
+                decision { _, _ -> null }
                 on(TestEvent) { transitionTo(StateA) }
                 on(OtherTestEvent) { transitionTo(StateC) }
             }
@@ -676,7 +676,7 @@ class GraphBuilderTest {
                 allows(StateB)
             }
             state(StateB) {
-                decision { TestEvent }
+                decision { _, _ -> TestEvent }
                 on(OtherTestEvent) { transitionTo(StateC) }
             }
             state(StateC)

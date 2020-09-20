@@ -37,34 +37,34 @@ val stateMachine = graph {
 
     state(Solid) {
         on(OnMelted) {
-            transitionTo(Liquid) {
+            transitionTo(Liquid) { trigger, result ->
                 logger.log(ON_MELTED_MESSAGE)
-                it.success()
+                result.success(trigger)
             }
         }
     }
 
     state(Liquid) {
         on(OnFrozen) {
-            transitionTo(Solid) {
+            transitionTo(Solid) { trigger, result ->
                 logger.log(ON_FROZEN_MESSAGE)
-                it.success()
+                result.success(trigger)
             }
         }
 
         on(OnVaporized) {
-            transitionTo(Gas) {
+            transitionTo(Gas) { trigger, result ->
                 logger.log(ON_VAPORIZED_MESSAGE)
-                it.success()
+                result.success(trigger)
             }
         }
     }
 
     state(Gas) {
         on(OnCondensed) {
-            transitionTo(Liquid) {
+            transitionTo(Liquid) { trigger, result ->
                 logger.log(ON_CONDENSED_MESSAGE)
-                it.success()
+                result.success(trigger)
             }
         }
     }

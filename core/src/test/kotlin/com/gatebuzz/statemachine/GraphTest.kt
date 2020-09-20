@@ -1,8 +1,8 @@
 package com.gatebuzz.statemachine
 
 import com.gatebuzz.statemachine.TestEvents.OtherTestEvent
-import com.nhaarman.mockitokotlin2.*
 import com.gatebuzz.statemachine.TestState.*
+import com.nhaarman.mockitokotlin2.*
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -166,7 +166,7 @@ class GraphTest {
         }
         testObject.start()
 
-        verify(nodeA.onEnter).accept(nodeA)
+        verify(nodeA.onEnter).accept(nodeA, null)
     }
 
     @Test
@@ -183,8 +183,8 @@ class GraphTest {
         testObject.transitionTo(nodeB)
 
         inOrder(nodeA.onEnter, nodeB.onEnter) {
-            verify(nodeA.onEnter).accept(nodeA)
-            verify(nodeB.onEnter).accept(nodeB)
+            verify(nodeA.onEnter).accept(nodeA, null)
+            verify(nodeB.onEnter).accept(nodeB, null)
         }
     }
 
@@ -204,9 +204,9 @@ class GraphTest {
         testObject.transitionTo(nodeB)
 
         inOrder(nodeA.onEnter, nodeB.onEnter, edgeAB.onEnter) {
-            verify(nodeA.onEnter).accept(nodeA)
+            verify(nodeA.onEnter).accept(nodeA, null)
             verify(edgeAB.onEnter).accept(edgeAB)
-            verify(nodeB.onEnter).accept(nodeB)
+            verify(nodeB.onEnter).accept(nodeB, null)
         }
     }
 
@@ -222,7 +222,7 @@ class GraphTest {
 
         testObject.transitionTo(nodeB)
 
-        verify(nodeA.onExit).accept(nodeA)
+        verify(nodeA.onExit).accept(nodeA, null)
     }
 
     @Test
@@ -241,7 +241,7 @@ class GraphTest {
         testObject.transitionTo(nodeB)
 
         inOrder(nodeA.onExit, nodeB.onExit, edgeAB.onExit) {
-            verify(nodeA.onExit).accept(nodeA)
+            verify(nodeA.onExit).accept(nodeA, null)
             verify(edgeAB.onExit).accept(edgeAB)
         }
     }
@@ -261,15 +261,15 @@ class GraphTest {
             add(edgeAB)
         }
         testObject.start()
-        verify(nodeA.onEnter).accept(nodeA)
+        verify(nodeA.onEnter).accept(nodeA, null)
 
         testObject.transitionTo(nodeB)
 
         inOrder(nodeB.onEnter, edgeAB.onEnter, nodeA.onExit, nodeB.onExit, edgeAB.onExit) {
-            verify(nodeA.onExit).accept(nodeA)
+            verify(nodeA.onExit).accept(nodeA, null)
             verify(edgeAB.onEnter).accept(edgeAB)
             verify(edgeAB.onExit).accept(edgeAB)
-            verify(nodeB.onEnter).accept(nodeB)
+            verify(nodeB.onEnter).accept(nodeB, null)
         }
     }
     //endregion
@@ -288,7 +288,7 @@ class GraphTest {
 
         testObject.transitionTo(nodeB)
 
-        verify(edgeAB.action).execute(isA())
+        verify(edgeAB.action).execute(anyOrNull(), isA())
     }
 
     @Test
@@ -301,7 +301,7 @@ class GraphTest {
         nodeB.onExit = mock()
         edgeAB.onEnter = mock()
         edgeAB.onExit = mock()
-        edgeAB.action = EdgeAction(ResultEmitter::success)
+        edgeAB.action = EdgeAction { tr, result -> result.success(tr) }
         val testObject = Graph().apply {
             initialState = MachineState.Dwelling(nodeA)
             add(nodeA)
@@ -313,12 +313,12 @@ class GraphTest {
         testObject.transitionTo(nodeB)
 
         inOrder(nodeB.onEnter, edgeAB.onEnter, nodeA.onExit, nodeB.onExit, edgeAB.onExit) {
-            verify(nodeA.onExit).accept(nodeA)
+            verify(nodeA.onExit).accept(nodeA, null)
 
             verify(edgeAB.onEnter).accept(edgeAB)
             verify(edgeAB.onExit).accept(edgeAB)
 
-            verify(nodeB.onEnter).accept(nodeB)
+            verify(nodeB.onEnter).accept(nodeB, null)
         }
     }
 
@@ -332,7 +332,7 @@ class GraphTest {
         nodeB.onExit = mock()
         edgeAB.onEnter = mock()
         edgeAB.onExit = mock()
-        edgeAB.action = EdgeAction(ResultEmitter::failure)
+        edgeAB.action = EdgeAction { tr, result -> result.failure(tr) }
         val testObject = Graph().apply {
             initialState = MachineState.Dwelling(nodeA)
             add(nodeA)
@@ -344,11 +344,11 @@ class GraphTest {
         testObject.transitionTo(nodeB)
 
         inOrder(nodeA.onEnter, nodeB.onEnter, edgeAB.onEnter, nodeA.onExit, nodeB.onExit, edgeAB.onExit) {
-            verify(nodeA.onEnter).accept(nodeA)
-            verify(nodeA.onExit).accept(nodeA)
+            verify(nodeA.onEnter).accept(nodeA, null)
+            verify(nodeA.onExit).accept(nodeA, null)
 
             verify(edgeAB.onEnter).accept(edgeAB)
-            verify(nodeA.onEnter).accept(nodeA)
+            verify(nodeA.onEnter).accept(nodeA, null)
         }
         verifyZeroInteractions(nodeB.onEnter)
         verifyZeroInteractions(edgeAB.onExit)
@@ -371,7 +371,7 @@ class GraphTest {
 
         testObject.consume(event)
 
-        verify(edgeAB.action).execute(isA())
+        verify(edgeAB.action).execute(anyOrNull(), isA())
     }
 
     @Test
@@ -411,10 +411,10 @@ class GraphTest {
         testObject.transitionTo(nodeB)
 
         inOrder(nodeA.onEnter, nodeB.decision!!) {
-            verify(nodeA.onEnter).accept(nodeA)
-            verify(nodeB.decision)!!.decide(nodeB)
+            verify(nodeA.onEnter).accept(nodeA, null)
+            verify(nodeB.decision)!!.decide(nodeB, null)
         }
-        verify(nodeB.onEnter, never()).accept(any())
+        verify(nodeB.onEnter, never()).accept(any(), isNull())
     }
 
     @Test
@@ -424,7 +424,7 @@ class GraphTest {
         nodeB.onEnter = mock()
         nodeB.onExit = mock()
         nodeC.onEnter = mock()
-        whenever(nodeB.decision!!.decide(any())).thenReturn(OtherTestEvent)
+        whenever(nodeB.decision!!.decide(anyOrNull(), anyOrNull())).thenReturn(OtherTestEvent)
 
         val testObject = Graph().apply {
             initialState = MachineState.Dwelling(nodeA)
@@ -438,12 +438,12 @@ class GraphTest {
         testObject.transitionTo(nodeB)
 
         inOrder(nodeA.onEnter, nodeB.decision!!, nodeB.onExit, nodeC.onEnter) {
-            verify(nodeA.onEnter).accept(nodeA)
-            verify(nodeB.decision)!!.decide(nodeB)
-            verify(nodeB.onExit).accept(nodeB)
-            verify(nodeC.onEnter).accept(nodeC)
+            verify(nodeA.onEnter).accept(nodeA, null)
+            verify(nodeB.decision)!!.decide(nodeB, null)
+            verify(nodeB.onExit).accept(nodeB, OtherTestEvent)
+            verify(nodeC.onEnter).accept(nodeC, OtherTestEvent)
         }
-        verify(nodeB.onEnter, never()).accept(any())
+        verify(nodeB.onEnter, never()).accept(any(), anyOrNull())
     }
 
     @Test
@@ -453,7 +453,7 @@ class GraphTest {
         nodeB.onEnter = mock()
         nodeB.onExit = mock()
         nodeC.onEnter = mock()
-        whenever(nodeB.decision!!.decide(any())).thenReturn(null)
+        whenever(nodeB.decision!!.decide(anyOrNull(), anyOrNull())).thenReturn(null)
 
         val testObject = Graph().apply {
             initialState = MachineState.Dwelling(nodeA)
@@ -467,12 +467,12 @@ class GraphTest {
         testObject.transitionTo(nodeB)
 
         inOrder(nodeA.onEnter, nodeB.decision!!) {
-            verify(nodeA.onEnter).accept(nodeA)
-            verify(nodeB.decision)!!.decide(nodeB)
+            verify(nodeA.onEnter).accept(nodeA, null)
+            verify(nodeB.decision)!!.decide(nodeB, null)
         }
-        verify(nodeB.onEnter, never()).accept(any())
-        verify(nodeB.onExit, never()).accept(nodeB)
-        verify(nodeC.onEnter, never()).accept(nodeC)
+        verify(nodeB.onEnter, never()).accept(anyOrNull(), anyOrNull())
+        verify(nodeB.onExit, never()).accept(nodeB, null)
+        verify(nodeC.onEnter, never()).accept(nodeC, null)
     }
 
     //endregion

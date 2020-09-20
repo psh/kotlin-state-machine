@@ -1,5 +1,5 @@
 package com.gatebuzz.statemachine
 
 fun interface EdgeAction {
-    fun execute(result: ResultEmitter)
+    fun execute(trigger: Event?, result: ResultEmitter)
 }

@@ -52,9 +52,9 @@ class GraphBuilder {
         states.forEach { sb ->
             val from = allNodes[sb.id]!!
             sb.allowed.forEach { add(Edge(from, allNodes[it]!!)) }
-            sb.edges.forEach { add(it.value.build(from)) }
+            sb.edges.forEach { add(it.value.build(from, allNodes)) }
             sb.events.forEach { e ->
-                with(e.value.build(from)) {
+                with(e.value.build(from, allNodes)) {
                     add(this)
                     addEvent(e.key, this)
                 }
@@ -164,8 +164,8 @@ class EdgeBuilder(var destination: State? = null) {
         exit = EdgeVisitor { action(it) }
     }
 
-    fun build(from: Node): Edge {
-        return Edge(from, Node(destination!!)).apply {
+    fun build(from: Node, allNodes: MutableMap<State, Node>): Edge {
+        return Edge(from, allNodes[destination!!]!!).apply {
             enter?.let { onEnter = it }
             exit?.let { onExit = it }
             action = transitionAction

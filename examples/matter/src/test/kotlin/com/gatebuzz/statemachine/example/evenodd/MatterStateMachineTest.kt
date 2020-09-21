@@ -1,9 +1,9 @@
-package com.gatebuzz.statemachine.example.matter
+package com.gatebuzz.statemachine.example.evenodd
 
 import com.gatebuzz.statemachine.MachineState.Dwelling
 import com.gatebuzz.statemachine.Node
-import com.gatebuzz.statemachine.example.matter.MatterEvent.*
-import com.gatebuzz.statemachine.example.matter.MatterState.*
+import com.gatebuzz.statemachine.example.evenodd.MatterEvent.*
+import com.gatebuzz.statemachine.example.evenodd.MatterState.*
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import org.junit.Assert.assertEquals

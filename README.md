@@ -1,3 +1,7 @@
+[![Build Status](https://travis-ci.com/psh/kotlin-state-machine.svg?token=1nouCzPFZQuPA3QYtpm8&branch=master)](https://travis-ci.com/psh/kotlin-state-machine)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![ktlint](https://img.shields.io/badge/code%20style-%E2%9D%A4-FF4081.svg)](https://ktlint.github.io/)
+
 # kotlin-state-machine
 
 ## Example State Machine
@@ -164,6 +168,8 @@ In this scenario, consuming the `OnMelted` event will trigger a transition which
 4. `Node` Liquid OnEnter
 
 ## Decision States
+![Even-Odd Diagram](examples/even-odd/state-diagram.png)
+
 If you include a `decision` in a state definition, it will be executed in preference to the normal `onEnter`.  The return value from the
 decision lambda will be processed as if `consume()` had been called, with all the normal event handling / transition rules.  A return 
 value `null` or other unhandled event wont cause a transition.
@@ -171,14 +177,15 @@ value `null` or other unhandled event wont cause a transition.
 ```kotlin
 graph {
     initialState(StateA)
-    state(StateA) {
-        allows(StateB)
-    }
+    
+    state(StateA) { allows(StateB) }
+    
     state(StateB) {
         decision { /* returns an event, or null */ }
         on(TestEvent) { transitionTo(StateA) }
         on(OtherTestEvent) { transitionTo(StateC) }
     }
+    
     state(StateC)
 }
 ```

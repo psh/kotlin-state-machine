@@ -1,3 +1,4 @@
+[![ktlint](https://img.shields.io/badge/code%20style-%E2%9D%A4-FF4081.svg)](https://ktlint.github.io/) [![Build Status](https://travis-ci.com/psh/kotlin-state-machine.svg?token=1nouCzPFZQuPA3QYtpm8&branch=master)](https://travis-ci.com/psh/kotlin-state-machine)
 # kotlin-state-machine
 
 ## Example State Machine

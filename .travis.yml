@@ -5,5 +5,5 @@ before_install:
   - chmod +x gradlew
   - chmod +x gradle/wrapper/gradle-wrapper.jar
 script:
-  - ./gradlew clean assemble test
+  - ./gradlew clean assemble test ktLintCheck
 

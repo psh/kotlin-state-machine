@@ -4,8 +4,8 @@ import com.gatebuzz.statemachine.MachineState.Dwelling
 import com.gatebuzz.statemachine.Node
 import com.gatebuzz.statemachine.example.evenodd.MatterEvent.*
 import com.gatebuzz.statemachine.example.evenodd.MatterState.*
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.verify
+import io.mockk.mockk
+import io.mockk.verify
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
@@ -13,7 +13,7 @@ import org.junit.Test
 class MatterStateMachineTest {
     @Before
     fun setUp() {
-        logger = mock()
+        logger = mockk(relaxed = true)
     }
 
     @Test
@@ -29,7 +29,7 @@ class MatterStateMachineTest {
         stateMachine.consume(OnMelted)
 
         assertEquals(Liquid, stateMachine.currentState.id)
-        verify(logger).log(ON_MELTED_MESSAGE)
+        verify { logger.log(ON_MELTED_MESSAGE) }
     }
 
     @Test
@@ -39,7 +39,7 @@ class MatterStateMachineTest {
         stateMachine.consume(OnFrozen)
 
         assertEquals(Solid, stateMachine.currentState.id)
-        verify(logger).log(ON_FROZEN_MESSAGE)
+        verify { logger.log(ON_FROZEN_MESSAGE) }
     }
 
     @Test
@@ -49,7 +49,7 @@ class MatterStateMachineTest {
         stateMachine.consume(OnVaporized)
 
         assertEquals(Gas, stateMachine.currentState.id)
-        verify(logger).log(ON_VAPORIZED_MESSAGE)
+        verify { logger.log(ON_VAPORIZED_MESSAGE) }
     }
 
     @Test
@@ -59,7 +59,7 @@ class MatterStateMachineTest {
         stateMachine.consume(OnCondensed)
 
         assertEquals(Liquid, stateMachine.currentState.id)
-        verify(logger).log(ON_CONDENSED_MESSAGE)
+        verify { logger.log(ON_CONDENSED_MESSAGE) }
     }
 
     @Test

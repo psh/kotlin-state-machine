@@ -1,8 +1,0 @@
-archivesBaseName = 'kotlin-state-machine'
-
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-}
-

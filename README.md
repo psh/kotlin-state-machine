@@ -6,9 +6,11 @@
 # kotlin-state-machine
 
 ## Example State Machine
+
 ![Matter State Diagram](examples/matter/state-diagram.png)
 
 Our state machine has three states:
+
 ```kotlin
 sealed class MatterState : State {
     object Solid : MatterState()
@@ -16,7 +18,9 @@ sealed class MatterState : State {
     object Gas : MatterState()
 }
 ```
+
 Allowing us to define a simple state machine for matter:
+
 ```kotlin
 val stateMachine = graph {
     initialState(Solid)
@@ -36,6 +40,7 @@ val stateMachine = graph {
 ```
 
 Which can then be driven by calling `transitionTo()`:
+
 ```kotlin
 stateMachine.start()
 
@@ -48,8 +53,9 @@ stateMachine.transitionTo(Liquid)
 // vaporize the liquid
 stateMachine.transitionTo(Gas)
 ```
+
 Note: if you prefer, you can have multiple `allows()` definitions rather than the comma-separated list
- 
+
 ```kotlin
 state(Liquid) {
     allows(Solid)
@@ -58,7 +64,9 @@ state(Liquid) {
 ```
 
 ## Event Driven State Machine
+
 Transitions between states can be triggered by events:
+
 ```kotlin
 sealed class MatterEvent : Event {
     object OnMelted : MatterEvent()
@@ -68,7 +76,9 @@ sealed class MatterEvent : Event {
 }
 ```
 
-Allowing us to define an event-driven state machine that focuses more on the _edges_ between the nodes (the red arrows in the state diagram):
+Allowing us to define an event-driven state machine that focuses more on the _edges_ between the nodes (the red arrows
+in the state diagram):
+
 ```kotlin
 val stateMachine = graph {
     initialState(Solid)
@@ -95,9 +105,12 @@ val stateMachine = graph {
     }
 }
 ```
-Note: defining the state transition using `transitionTo()` implicitly sets up the list of allowed transitions for a given state; there is no need to use `allows()` when using `transitionTo()`.
+
+Note: defining the state transition using `transitionTo()` implicitly sets up the list of allowed transitions for a
+given state; there is no need to use `allows()` when using `transitionTo()`.
 
 This event-driven state machine can then be driven by calling `consume()` or, `transitionTo()`
+
 ```kotlin
 stateMachine.start()
 
@@ -114,6 +127,7 @@ stateMachine.transitionTo(Gas)
 ## Code Execution Triggers
 
 The simplest execution triggers are _entry_ and _exit_ of our states:
+
 ```kotlin
 state(Solid) {
     onEnter {
@@ -128,8 +142,10 @@ state(Solid) {
 }
 ```
 
-However, the state machine also has the concept of _edges_ between the nodes of the graph. It's possible to execute code as we 
+However, the state machine also has the concept of _edges_ between the nodes of the graph. It's possible to execute code
+as we
 _enter_ and _exit_ the transition (that is, at the start and the end of the red lines in the state diagram):
+
 ```kotlin
 // Event driven style
 state(Solid) {
@@ -162,19 +178,21 @@ state(Liquid) {
 }
 ```
 
-In this scenario, consuming the `OnMelted` event will trigger a transition which will execute the following steps: 
+In this scenario, consuming the `OnMelted` event will trigger a transition which will execute the following steps:
+
 1. `Node` Solid OnExit
 2. `Edge` Solid --> Liquid OnEnter
 3. `Edge` Solid --> Liquid OnExit
 4. `Node` Liquid OnEnter
 
 ## Decision States
+
 ![Even-Odd Diagram](examples/even-odd/state-diagram.png)
 
-If you include a `decision` in a state definition, it will be executed in preference to the normal `onEnter`.  The return value from the
-decision lambda will be processed as if `consume()` had been called, with all the normal event handling / transition rules.  A return 
-value `null` or other unhandled event wont cause a transition.
-  
+If you include a `decision` in a state definition, it will be executed in preference to the normal `onEnter`. The return
+value from the decision lambda will be processed as if `consume()` had been called, with all the normal event handling /
+transition rules. A return value `null` or other unhandled event wont cause a transition.
+
 ```kotlin
 graph {
     initialState(StateA)
@@ -193,8 +211,9 @@ graph {
 
 ## Conditional & Long Running Transitions
 
-By default, state transitions are instantaneous and never fail.  You can supply a block of code that will override that behavior, allowing for
-long-running operations that have the option to succeed or fail:
+By default, state transitions are instantaneous and never fail. You can supply a block of code that will override that
+behavior, allowing for long-running operations that have the option to succeed or fail:
+
 ```kotlin
 state(Solid) {
     on(OnMelted) { 
@@ -213,7 +232,9 @@ state(Solid) {
     }
 }
 ``` 
+
 and for a non-event driven state machines :
+
 ```kotlin
 state(Solid) {
     onTransitionTo(Liquid) { 
@@ -232,17 +253,21 @@ state(Solid) {
 }
 ``` 
 
-By default, when a transition fails, the _exit_ block of the edge will not be called and the state machine will re-enter the "from" state of the transition.    
+By default, when a transition fails, the _exit_ block of the edge will not be called and the state machine will re-enter
+the "from" state of the transition.
 
 1. `Node` Solid OnExit
 2. `Edge` Solid --> Liquid OnEnter
 3. `Node` Solid OnEnter
 
-An application might be tempted to show and hide a progress indicator (`onEnter` / `onExit`) while making a REST service call (using `execute`) 
-but the lack of a call to the `onExit` when a transition fails would leave the progress indicator visible.  In that case the call to `failure()` 
+An application might be tempted to show and hide a progress indicator (`onEnter` / `onExit`) while making a REST service
+call (using `execute`)
+but the lack of a call to the `onExit` when a transition fails would leave the progress indicator visible. In that case
+the call to `failure()`
 can be replaced with `failAndExit()` to ensure that the `onEnter` / `onExit` are still executed as a pair.
 
 The execution block can be combined with the call to `transitionTo()` for a more concise syntax
+
 ```kotlin
 state(Solid) {
     on(OnMelted) { 
@@ -258,13 +283,19 @@ state(Solid) {
     }
 }
 ``` 
-  
-Note: Be aware that the state machine _will be left in limbo_ (the transition will never complete) if none of the success or failure methods are called.
+
+Note: Be aware that the state machine _will be left in limbo_ (the transition will never complete) if none of the
+success or failure methods are called.
 
 ## Starting The Machine At A Given State
-State machines are defined to be in an _inactive_ state when they are first defined (the large black dot on the state diagram).  A call to `start()` is required to make the initial transition into the defined _initialState_.  Optionally a _machine state_
-can be passed into the `start()` method to start the state machine at an arbitrary node in the graph.  The state machine allows either `Inactive` or `Dwelling` machine states to start and will
-throw an exception if you try to start with `Traversing`.
+
+State machines are defined to be in an _inactive_ state when they are first defined (the large black dot on the state
+diagram). A call to `start()` is required to make the initial transition into the defined _initialState_. Optionally a _
+machine state_
+can be passed into the `start()` method to start the state machine at an arbitrary node in the graph. The state machine
+allows either `Inactive` or `Dwelling` machine states to start and will throw an exception if you try to start
+with `Traversing`.
+
 ```kotlin
 @Test
 fun `freezing should move us from liquid to solid`() {
@@ -278,11 +309,14 @@ fun `freezing should move us from liquid to solid`() {
     assertEquals(Solid, stateMachine.currentState.id)
 }
 ```
-The `start()` method can be called at any time (and even multiple times) to reset the state machine to a given node in the graph.
+
+The `start()` method can be called at any time (and even multiple times) to reset the state machine to a given node in
+the graph.
 
 ## Observing State Changes
 
 Listeners can be added to observe the state transitions, or just the state changes themselves.
+
 ```kotlin
 val stateMachine = graph {
     initialState(Solid)

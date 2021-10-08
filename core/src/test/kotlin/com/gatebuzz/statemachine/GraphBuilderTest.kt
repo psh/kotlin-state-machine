@@ -8,14 +8,12 @@ import io.mockk.Called
 import io.mockk.mockk
 import io.mockk.verify
 import io.mockk.verifyOrder
-import org.junit.Assert
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class GraphBuilderTest {
 
-    private val transitionListener: StateTransitionListener = mockk(relaxed = true)
-    private val stateListener: StateListener = mockk(relaxed = true)
     private val nodeA = Node(StateA)
     private val nodeB = Node(StateB)
     private val nodeC = Node(StateC)
@@ -147,38 +145,11 @@ class GraphBuilderTest {
             state(StateB)
         }
         testObject.start()
-        testObject.addStateChangeListener(transitionListener)
-        testObject.addStateListener(stateListener)
 
         val newNode = testObject.transitionTo(nodeC)
 
-        Assert.assertNull(newNode)
+        assertNull(newNode)
         assertEquals(Dwelling(nodeA), testObject.currentState)
-        verify { listOf(transitionListener, stateListener) wasNot Called }
-    }
-
-    @Test
-    fun `state change includes traversal`() {
-        val testObject = graph {
-            initialState(StateA)
-            state(StateA)
-            state(StateB)
-            onTransition(transitionListener::onStateTransition)
-            onState(stateListener::onState)
-        }
-        testObject.start()
-
-        testObject.transitionTo(nodeB)
-
-        verifyOrder {
-            transitionListener.onStateTransition(Dwelling(nodeA))
-            transitionListener.onStateTransition(MachineState.Traversing(Edge(nodeA, nodeB)))
-            transitionListener.onStateTransition(Dwelling(nodeB))
-        }
-        verifyOrder {
-            stateListener.onState(StateA)
-            stateListener.onState(StateB)
-        }
     }
     //endregion
 

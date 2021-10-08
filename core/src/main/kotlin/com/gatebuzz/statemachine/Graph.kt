@@ -2,6 +2,9 @@ package com.gatebuzz.statemachine
 
 import com.gatebuzz.statemachine.MachineState.Dwelling
 import com.gatebuzz.statemachine.MachineState.Inactive
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.runBlocking
 
 data class Node(val id: State) {
     var onEnter: NodeVisitor = NodeVisitor { _, _ -> }
@@ -36,8 +39,9 @@ class Graph internal constructor(
 
     private val nodes: MutableList<Node> = mutableListOf()
     private val edges: MutableList<Edge> = mutableListOf()
-    private val listeners: MutableList<StateTransitionListener> = mutableListOf()
     private val edgeTriggers: MutableMap<Event, Edge> = mutableMapOf()
+    private val stateObserver: MutableSharedFlow<State> = MutableSharedFlow(replay = 0)
+    private val machineStateObserver: MutableSharedFlow<MachineState> = MutableSharedFlow(replay = 0)
 
     fun findNode(id: State): Node? = nodes.find { it.id == id }
 
@@ -51,7 +55,7 @@ class Graph internal constructor(
             val state = currentState as Dwelling
             state.node.onEnter.accept(state.node, null)
         }
-        notifyStateChange(currentState)
+        runBlocking { notifyStateChange(currentState) }
         return this
     }
 
@@ -74,20 +78,12 @@ class Graph internal constructor(
         return doTransition(validNode, trigger)
     }
 
-    fun addStateChangeListener(listener: StateTransitionListener) {
-        listeners.add(listener)
+    fun observeState(): Flow<State> {
+        return stateObserver
     }
 
-    fun addStateListener(listener: StateListener) {
-        listeners.add(
-            object : StateTransitionListener {
-                override fun onStateTransition(state: MachineState) {
-                    if (state is Dwelling) {
-                        listener.onState(state.id)
-                    }
-                }
-            }
-        )
+    fun observeStateChanges(): Flow<MachineState> {
+        return machineStateObserver
     }
 
     internal fun add(node: Node) {
@@ -119,10 +115,10 @@ class Graph internal constructor(
             trigger,
             object : ResultEmitter {
                 override fun success(trigger: Event?) {
-                    notifyStateChange(MachineState.Traversing(registeredEdge))
+                    runBlocking { notifyStateChange(MachineState.Traversing(registeredEdge)) }
                     registeredEdge.onExit.accept(registeredEdge)
                     currentState = Dwelling(edge.to)
-                    notifyStateChange(currentState)
+                    runBlocking { notifyStateChange(currentState) }
                     if (edge.to.decision != null) {
                         edge.to.decision?.decide(edge.to, trigger)?.let {
                             consume(it)
@@ -140,7 +136,7 @@ class Graph internal constructor(
                 override fun failure(trigger: Event?) {
                     currentState = Dwelling(edge.from)
                     edge.from.onEnter.accept(edge.from, trigger)
-                    notifyStateChange(currentState)
+                    runBlocking { notifyStateChange(currentState) }
                 }
             }
         )
@@ -150,12 +146,15 @@ class Graph internal constructor(
     private fun moveDirectly(node: Node, trigger: Event?): Node {
         currentState = Dwelling(node)
         node.onEnter.accept(node, trigger)
-        notifyStateChange(currentState)
+        runBlocking { notifyStateChange(currentState) }
         return node
     }
 
-    private fun notifyStateChange(state: MachineState) = listeners.forEach {
-        it.onStateTransition(state)
+    private suspend fun notifyStateChange(state: MachineState) {
+        machineStateObserver.emit(state)
+        if (state is Dwelling) {
+            stateObserver.emit(state.id)
+        }
     }
 
     override fun equals(other: Any?): Boolean {

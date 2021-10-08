@@ -84,23 +84,23 @@ val stateMachine = graph {
     initialState(Solid)
 
     state(Solid) {
-        on(OnMelted) { 
-            transitionTo(Liquid) 
+        on(OnMelted) {
+            transitionTo(Liquid)
         }
     }
 
     state(Liquid) {
-        on(OnFrozen) { 
-            transitionTo(Solid) 
+        on(OnFrozen) {
+            transitionTo(Solid)
         }
-        on(OnVaporized) { 
-            transitionTo(Gas) 
+        on(OnVaporized) {
+            transitionTo(Gas)
         }
     }
 
     state(Gas) {
-        on(OnCondensed) { 
-            transitionTo(Liquid) 
+        on(OnCondensed) {
+            transitionTo(Liquid)
         }
     }
 }
@@ -132,11 +132,11 @@ The simplest execution triggers are _entry_ and _exit_ of our states:
 state(Solid) {
     onEnter {
         // code executed each time we enter the Solid state 
-    }   
+    }
 
     onExit {
         // code executed each time we leave the Solid state 
-    }   
+    }
 
     on(OnMelted) { transitionTo(Liquid) }
 }
@@ -149,31 +149,31 @@ _enter_ and _exit_ the transition (that is, at the start and the end of the red 
 ```kotlin
 // Event driven style
 state(Solid) {
-    onEnter { }   
-    onExit { }   
+    onEnter { }
+    onExit { }
 
-    on(OnMelted) { 
+    on(OnMelted) {
         onEnter {
             // code executed each time we enter the 
             // transition state from Solid --> Liquid 
-        }   
+        }
 
         onExit {
             // code executed each time we exit the 
             // transition state from Solid --> Liquid 
-        }   
+        }
 
-        transitionTo(Liquid) 
+        transitionTo(Liquid)
     }
 }
 
 // Non-event driven
 state(Liquid) {
-    onEnter { }   
-    onExit { }   
+    onEnter { }
+    onExit { }
     onTransitionTo(Gas) {
-        onEnter { }   
-        onExit { }   
+        onEnter { }
+        onExit { }
     }
 }
 ```
@@ -196,15 +196,15 @@ transition rules. A return value `null` or other unhandled event wont cause a tr
 ```kotlin
 graph {
     initialState(StateA)
-    
+
     state(StateA) { allows(StateB) }
-    
+
     state(StateB) {
         decision { /* returns an event, or null */ }
         on(TestEvent) { transitionTo(StateA) }
         on(OtherTestEvent) { transitionTo(StateC) }
     }
-    
+
     state(StateC)
 }
 ```
@@ -216,10 +216,10 @@ behavior, allowing for long-running operations that have the option to succeed o
 
 ```kotlin
 state(Solid) {
-    on(OnMelted) { 
-        onEnter { }   
-        onExit { }   
-        transitionTo(Liquid) 
+    on(OnMelted) {
+        onEnter { }
+        onExit { }
+        transitionTo(Liquid)
         execute { result ->
             /* Do something that might take a while */
 
@@ -228,7 +228,7 @@ state(Solid) {
             } else {
                 result.failure()
             }
-        }        
+        }
     }
 }
 ``` 
@@ -237,9 +237,9 @@ and for a non-event driven state machines :
 
 ```kotlin
 state(Solid) {
-    onTransitionTo(Liquid) { 
-        onEnter { }   
-        onExit { }   
+    onTransitionTo(Liquid) {
+        onEnter { }
+        onExit { }
         execute { result ->
             /* Do something that might take a while */
 
@@ -248,7 +248,7 @@ state(Solid) {
             } else {
                 result.failure()
             }
-        }        
+        }
     }
 }
 ``` 
@@ -270,7 +270,7 @@ The execution block can be combined with the call to `transitionTo()` for a more
 
 ```kotlin
 state(Solid) {
-    on(OnMelted) { 
+    on(OnMelted) {
         transitionTo(Liquid) { result ->
             /* Do something that might take a while */
 
@@ -279,7 +279,7 @@ state(Solid) {
             } else {
                 result.failure()
             }
-        }        
+        }
     }
 }
 ``` 
@@ -315,8 +315,7 @@ the graph.
 
 ## Observing State Changes
 
-Listeners can be added to observe the state transitions, or just the state changes themselves.
-
+Suppose you have a basic state machine
 ```kotlin
 val stateMachine = graph {
     initialState(Solid)
@@ -324,17 +323,22 @@ val stateMachine = graph {
     state(Solid) { }
     state(Liquid) { }
     state(Gas) { }
-
-    onTransition { machineState ->
-        // called when dwelling on a particular node, 
-        // eg, MachineState.Dwelling( Node(Gas) )
-        //
-        // or when traversing an edge of the graph,
-        // eg, MachineState.Traversing( Edge( Node(Liquid), Node(Gas) )
-    }
-
-    onState { state ->
-        // called with each state we land in eg, Solid or Gas
-    }
 }
+```
+
+The graph you build is *observable* - you can observe either the states themselves as things change over time, or the lower-level state transitions (that includes edge traversal)
+
+```kotlin
+stateMachine.observeState().collect { state ->
+    // called with each state that we land in eg, Solid or Gas
+}
+
+stateMachine.observeStateChanges().collect { machineState ->
+    // called when dwelling on a particular node, 
+    // eg, MachineState.Dwelling( Node(Gas) )
+    //
+    // or when traversing an edge of the graph,
+    // eg, MachineState.Traversing( Edge( Node(Liquid), Node(Gas) )
+}
+
 ```

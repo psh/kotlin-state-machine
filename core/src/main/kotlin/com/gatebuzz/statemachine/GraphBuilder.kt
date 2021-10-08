@@ -43,8 +43,6 @@ class GraphBuilder {
             }
 
             buildGraphEdges(allNodes)
-
-            addListeners()
         }
     }
 
@@ -59,24 +57,6 @@ class GraphBuilder {
                     addEvent(e.key, this)
                 }
             }
-        }
-    }
-
-    private fun Graph.addListeners() {
-        transitions.forEach {
-            addStateChangeListener(
-                object : StateTransitionListener {
-                    override fun onStateTransition(state: MachineState) = it(state)
-                }
-            )
-        }
-
-        stateChanges.forEach {
-            addStateListener(
-                object : StateListener {
-                    override fun onState(state: State) = it(state)
-                }
-            )
         }
     }
 

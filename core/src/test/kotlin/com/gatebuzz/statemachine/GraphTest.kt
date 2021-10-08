@@ -1,15 +1,17 @@
 package com.gatebuzz.statemachine
 
+import app.cash.turbine.test
 import com.gatebuzz.statemachine.TestEvents.OtherTestEvent
 import com.gatebuzz.statemachine.TestState.*
 import io.mockk.*
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Test
+import kotlin.time.ExperimentalTime
 
+@ExperimentalTime
 class GraphTest {
 
-    private val transitionListener: StateTransitionListener = mockk(relaxed = true)
-    private val stateListener: StateListener = mockk(relaxed = true)
     private val nodeA = Node(StateA)
     private val nodeB = Node(StateB)
     private val nodeC = Node(StateC)
@@ -35,8 +37,6 @@ class GraphTest {
             add(nodeA)
             add(nodeB)
             add(edgeAB)
-            addStateChangeListener(transitionListener)
-            addStateListener(stateListener)
         }
         assertTrue(testObject1 == testObject2)
         assertEquals(testObject1.hashCode(), testObject2.hashCode())
@@ -64,20 +64,35 @@ class GraphTest {
     }
 
     @Test
-    fun `graph with one node is inactive until started`() {
+    fun `graph with one node is inactive until started - observing state`() = runBlocking {
         val testObject = Graph().apply {
             initialState = MachineState.Dwelling(nodeA)
             add(nodeA)
-            addStateChangeListener(transitionListener)
-            addStateListener(stateListener)
         }
         assertEquals(MachineState.Inactive(), testObject.currentState)
 
-        testObject.start()
+        testObject.observeState().test {
+            testObject.start()
 
-        assertEquals(MachineState.Dwelling(nodeA), testObject.currentState)
-        transitionListener.onStateTransition(MachineState.Dwelling(nodeA))
-        stateListener.onState(StateA)
+            assertEquals(MachineState.Dwelling(nodeA), testObject.currentState)
+            assertEquals(StateA, awaitItem())
+        }
+    }
+
+    @Test
+    fun `graph with one node is inactive until started - observing machine state`() = runBlocking {
+        val testObject = Graph().apply {
+            initialState = MachineState.Dwelling(nodeA)
+            add(nodeA)
+        }
+        assertEquals(MachineState.Inactive(), testObject.currentState)
+
+        testObject.observeStateChanges().test {
+            testObject.start()
+
+            assertEquals(MachineState.Dwelling(nodeA), testObject.currentState)
+            assertEquals(MachineState.Dwelling(nodeA), awaitItem())
+        }
     }
     //endregion
 
@@ -113,7 +128,7 @@ class GraphTest {
     }
 
     @Test
-    fun `cannot transition to nodes outside of the graph`() {
+    fun `cannot transition to nodes outside of the graph`() = runBlocking {
         val testObject = Graph().apply {
             initialState = MachineState.Dwelling(nodeA)
             add(nodeA)
@@ -121,36 +136,46 @@ class GraphTest {
         }
         testObject.start()
 
-        testObject.addStateChangeListener(transitionListener)
-        testObject.addStateListener(stateListener)
-        val newNode = testObject.transitionTo(nodeC)
-
-        assertNull(newNode)
-        assertEquals(MachineState.Dwelling(nodeA), testObject.currentState)
-        verify { listOf(transitionListener, stateListener) wasNot Called }
+        testObject.observeState().test {
+            val newNode = testObject.transitionTo(nodeC)
+            assertNull(newNode)
+            assertEquals(MachineState.Dwelling(nodeA), testObject.currentState)
+            expectNoEvents()
+        }
     }
 
     @Test
-    fun `state change includes traversal`() {
+    fun `observe state changes`() = runBlocking {
         val testObject = Graph().apply {
             initialState = MachineState.Dwelling(nodeA)
             add(nodeA)
             add(nodeB)
-            addStateChangeListener(transitionListener)
-            addStateListener(stateListener)
         }
-        testObject.start()
 
-        testObject.transitionTo(nodeB)
+        testObject.observeState().test {
+            testObject.start()
+            assertEquals(StateA, awaitItem())
 
-        verifyOrder {
-            transitionListener.onStateTransition(MachineState.Dwelling(nodeA))
-            transitionListener.onStateTransition(MachineState.Traversing(Edge(nodeA, nodeB)))
-            transitionListener.onStateTransition(MachineState.Dwelling(nodeB))
+            testObject.transitionTo(nodeB)
+            assertEquals(StateB, awaitItem())
         }
-        verifyOrder {
-            stateListener.onState(StateA)
-            stateListener.onState(StateB)
+    }
+
+    @Test
+    fun `observed machine state change includes traversal`() = runBlocking {
+        val testObject = Graph().apply {
+            initialState = MachineState.Dwelling(nodeA)
+            add(nodeA)
+            add(nodeB)
+        }
+
+        testObject.observeStateChanges().test {
+            testObject.start()
+            assertEquals(MachineState.Dwelling(nodeA), awaitItem())
+
+            testObject.transitionTo(nodeB)
+            assertEquals(MachineState.Traversing(Edge(nodeA, nodeB)), awaitItem())
+            assertEquals(MachineState.Dwelling(nodeB), awaitItem())
         }
     }
     //endregion

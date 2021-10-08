@@ -17,8 +17,11 @@ repositories {
 }
 
 dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2")
+
     testImplementation("junit:junit:4.13.2")
     testImplementation("io.mockk:mockk:1.12.0")
+    testImplementation("app.cash.turbine:turbine:0.6.1")
     testImplementation("org.jetbrains.kotlin:kotlin-reflect:1.5.10")
 }
 

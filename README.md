@@ -300,7 +300,7 @@ with `Traversing`.
 @Test
 fun `freezing should move us from liquid to solid`() {
     // Given
-    stateMachine.start(Dwelling(Node(Liquid)))
+    stateMachine.start(Dwelling(Liquid))
 
     // When
     stateMachine.consume(OnFrozen)
@@ -320,9 +320,9 @@ Suppose you have a basic state machine
 val stateMachine = graph {
     initialState(Solid)
 
-    state(Solid) { }
-    state(Liquid) { }
-    state(Gas) { }
+    state(Solid) { ... }
+    state(Liquid) { ... }
+    state(Gas) { ... }
 }
 ```
 
@@ -335,10 +335,10 @@ stateMachine.observeState().collect { state ->
 
 stateMachine.observeStateChanges().collect { machineState ->
     // called when dwelling on a particular node, 
-    // eg, MachineState.Dwelling( Node(Gas) )
+    // eg, MachineState.Dwelling( Gas )
     //
     // or when traversing an edge of the graph,
-    // eg, MachineState.Traversing( Edge( Node(Liquid), Node(Gas) )
+    // eg, MachineState.Traversing( Liquid to Gas )
 }
 
 ```

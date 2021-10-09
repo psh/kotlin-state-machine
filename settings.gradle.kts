@@ -5,5 +5,6 @@ include(":core")
 // various examples
 include(
     ":examples:even-odd",
-    ":examples:matter"
+    ":examples:matter",
+    ":examples:matter-flow"
 )

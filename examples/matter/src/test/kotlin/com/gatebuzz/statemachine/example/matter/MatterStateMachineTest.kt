@@ -1,9 +1,8 @@
-package com.gatebuzz.statemachine.example.evenodd
+package com.gatebuzz.statemachine.example.matter
 
 import com.gatebuzz.statemachine.MachineState.Dwelling
-import com.gatebuzz.statemachine.Node
-import com.gatebuzz.statemachine.example.evenodd.MatterEvent.*
-import com.gatebuzz.statemachine.example.evenodd.MatterState.*
+import com.gatebuzz.statemachine.example.matter.MatterEvent.*
+import com.gatebuzz.statemachine.example.matter.MatterState.*
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.Assert.assertEquals
@@ -24,7 +23,7 @@ class MatterStateMachineTest {
 
     @Test
     fun `melting should move us from solid to liquid`() {
-        stateMachine.start(Dwelling(Node(Solid)))
+        stateMachine.start(Dwelling(Solid))
 
         stateMachine.consume(OnMelted)
 
@@ -34,7 +33,7 @@ class MatterStateMachineTest {
 
     @Test
     fun `freezing should move us from liquid to solid`() {
-        stateMachine.start(Dwelling(Node(Liquid)))
+        stateMachine.start(Dwelling(Liquid))
 
         stateMachine.consume(OnFrozen)
 
@@ -44,7 +43,7 @@ class MatterStateMachineTest {
 
     @Test
     fun `vaporization should move us from liquid to gas`() {
-        stateMachine.start(Dwelling(Node(Liquid)))
+        stateMachine.start(Dwelling(Liquid))
 
         stateMachine.consume(OnVaporized)
 
@@ -54,18 +53,11 @@ class MatterStateMachineTest {
 
     @Test
     fun `condensation moves us from gas to liquid`() {
-        stateMachine.start(Dwelling(Node(Gas)))
+        stateMachine.start(Dwelling(Gas))
 
         stateMachine.consume(OnCondensed)
 
         assertEquals(Liquid, stateMachine.currentState.id)
         verify { logger.log(ON_CONDENSED_MESSAGE) }
-    }
-
-    @Test
-    fun `access the graph nodes`() {
-        assertEquals(Node(Solid), stateMachine.findNode(Solid))
-        assertEquals(Node(Liquid), stateMachine.findNode(Liquid))
-        assertEquals(Node(Gas), stateMachine.findNode(Gas))
     }
 }

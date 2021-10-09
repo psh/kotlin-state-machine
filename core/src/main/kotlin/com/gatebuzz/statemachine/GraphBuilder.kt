@@ -13,6 +13,7 @@ annotation class StateBuilderMarker
 @DslMarker
 annotation class EdgeBuilderMarker
 
+@Suppress("unused")
 @GraphBuilderMarker
 class GraphBuilder {
     private var initial: State? = null
@@ -29,7 +30,7 @@ class GraphBuilder {
             states.forEach { sb ->
                 allNodes[sb.id]?.let { n ->
                     sb.eventProducer?.let {
-                        n.decision = Decision { node: Node, trigger: Event? -> sb.eventProducer!!(node, trigger) }
+                        n.decision = Decision { state: State, trigger: Event? -> sb.eventProducer!!(state, trigger) }
                     }
                     sb.enter?.let { n.onEnter = it }
                     sb.exit?.let { n.onExit = it }
@@ -79,12 +80,12 @@ class GraphBuilder {
 
 @StateBuilderMarker
 class StateBuilder(val id: State) {
-    val events: MutableMap<Event, EdgeBuilder> = mutableMapOf()
-    val edges: MutableMap<State, EdgeBuilder> = mutableMapOf()
-    var enter: NodeVisitor? = null
-    var exit: NodeVisitor? = null
-    var allowed: MutableList<State> = mutableListOf()
-    var eventProducer: ((Node, Event?) -> Event?)? = null
+    internal val events: MutableMap<Event, EdgeBuilder> = mutableMapOf()
+    internal val edges: MutableMap<State, EdgeBuilder> = mutableMapOf()
+    internal var enter: StateVisitor? = null
+    internal var exit: StateVisitor? = null
+    internal var allowed: MutableList<State> = mutableListOf()
+    internal var eventProducer: ((State, Event?) -> Event?)? = null
 
     fun <T : Event> on(event: T, initBlock: EdgeBuilder.() -> Unit) {
         events[event] = EdgeBuilder().apply(initBlock)
@@ -94,23 +95,23 @@ class StateBuilder(val id: State) {
         edges[state] = EdgeBuilder(state).apply(initBlock)
     }
 
-    fun decision(producer: (Node, Event?) -> Event?) {
+    fun decision(producer: (State, Event?) -> Event?) {
         this.eventProducer = producer
     }
 
-    fun allNodes(): Map<State, Node> = mutableSetOf<Node>().apply {
+    internal fun allNodes(): Map<State, Node> = mutableSetOf<Node>().apply {
         add(Node(id))
         addAll(allowed.map { Node(it) })
         addAll(edges.map { Node(it.value.destination!!) })
         addAll(events.map { Node(it.value.destination!!) })
     }.associateBy { it.id }
 
-    fun onEnter(action: (Node, Event?) -> Unit) {
-        enter = NodeVisitor { node, trigger -> action(node, trigger) }
+    fun onEnter(action: (State, Event?) -> Unit) {
+        enter = StateVisitor { state, trigger -> action(state, trigger) }
     }
 
-    fun onExit(action: (Node, Event?) -> Unit) {
-        exit = NodeVisitor { node, trigger -> action(node, trigger) }
+    fun onExit(action: (State, Event?) -> Unit) {
+        exit = StateVisitor { state, trigger -> action(state, trigger) }
     }
 
     fun allows(vararg states: State) {
@@ -136,15 +137,15 @@ class EdgeBuilder(var destination: State? = null) {
         transitionAction = EdgeAction { trigger, result -> action(trigger, result) }
     }
 
-    fun onEnter(action: (Edge) -> Unit) {
+    fun onEnter(action: (Pair<State, State>) -> Unit) {
         enter = EdgeVisitor { action(it) }
     }
 
-    fun onExit(action: (Edge) -> Unit) {
+    fun onExit(action: (Pair<State, State>) -> Unit) {
         exit = EdgeVisitor { action(it) }
     }
 
-    fun build(from: Node, allNodes: MutableMap<State, Node>): Edge {
+    internal fun build(from: Node, allNodes: MutableMap<State, Node>): Edge {
         return Edge(from, allNodes[destination!!]!!).apply {
             enter?.let { onEnter = it }
             exit?.let { onExit = it }

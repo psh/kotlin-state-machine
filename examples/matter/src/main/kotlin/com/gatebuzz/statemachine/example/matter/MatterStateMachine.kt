@@ -1,9 +1,9 @@
-package com.gatebuzz.statemachine.example.evenodd
+package com.gatebuzz.statemachine.example.matter
 
 import com.gatebuzz.statemachine.Event
 import com.gatebuzz.statemachine.State
-import com.gatebuzz.statemachine.example.evenodd.MatterEvent.*
-import com.gatebuzz.statemachine.example.evenodd.MatterState.*
+import com.gatebuzz.statemachine.example.matter.MatterEvent.*
+import com.gatebuzz.statemachine.example.matter.MatterState.*
 import com.gatebuzz.statemachine.graph
 
 const val ON_MELTED_MESSAGE = "I melted"

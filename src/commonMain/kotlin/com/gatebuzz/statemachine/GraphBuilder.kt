@@ -1,4 +1,9 @@
+@file:Suppress("unused")
+
 package com.gatebuzz.statemachine
+
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 
 fun graph(initBlock: GraphBuilder.() -> Unit): Graph {
     return GraphBuilder().apply(initBlock).build()
@@ -17,12 +22,13 @@ annotation class EdgeBuilderMarker
 @GraphBuilderMarker
 class GraphBuilder {
     private var initial: State? = null
+    private var actionDispatcher: CoroutineDispatcher = Dispatchers.Default
     private val states: MutableList<StateBuilder> = mutableListOf()
     private val transitions: MutableList<(MachineState) -> Unit> = mutableListOf()
     private val stateChanges: MutableList<(State) -> Unit> = mutableListOf()
 
     fun build(): Graph {
-        return Graph().apply {
+        return Graph(dispatcher = actionDispatcher).apply {
             val allNodes = mutableMapOf<State, Node>().apply {
                 states.forEach { putAll(it.allNodes()) }
             }
@@ -123,18 +129,15 @@ class StateBuilder(val id: State) {
 class EdgeBuilder(var destination: State? = null) {
     private var enter: EdgeVisitor? = null
     private var exit: EdgeVisitor? = null
-    private var transitionAction: EdgeAction = EdgeAction { trigger, result -> result.success(trigger) }
+    private var transitionAction: EdgeAction = { }
 
-    fun transitionTo(
-        id: State,
-        action: (Event?, ResultEmitter) -> Unit = { trigger, result -> result.success(trigger) }
-    ) {
+    fun transitionTo(id: State, action: EdgeAction = { }) {
         destination = id
-        transitionAction = EdgeAction { trigger, result -> action(trigger, result) }
+        transitionAction = action
     }
 
-    fun execute(action: (Event?, ResultEmitter) -> Unit) {
-        transitionAction = EdgeAction { trigger, result -> action(trigger, result) }
+    fun execute(action: EdgeAction) {
+        transitionAction = action
     }
 
     fun onEnter(action: (Pair<State, State>) -> Unit) {

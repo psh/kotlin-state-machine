@@ -5,22 +5,23 @@ import com.gatebuzz.statemachine.MachineState.Dwelling
 import com.gatebuzz.statemachine.MachineState.Traversing
 import com.gatebuzz.statemachine.example.matter.MatterEvent.*
 import com.gatebuzz.statemachine.example.matter.MatterState.*
-import io.mockk.verify
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import kotlin.time.ExperimentalTime
 
+@ExperimentalCoroutinesApi
 @ExperimentalTime
 class MatterStateMachineTest {
     @Test
-    fun `initial state should be solid`() = runBlocking {
+    fun `initial state should be solid`() = runTest {
         stateMachine.start()
         assertEquals(Solid, stateMachine.currentState.id)
     }
 
     @Test
-    fun `melting should move us from solid to liquid`() = runBlocking {
+    fun `melting should move us from solid to liquid`() = runTest {
         stateMachine.start(Dwelling(Solid))
 
         stateMachine.observeStateChanges().test {
@@ -34,7 +35,7 @@ class MatterStateMachineTest {
     }
 
     @Test
-    fun `freezing should move us from liquid to solid`() = runBlocking {
+    fun `freezing should move us from liquid to solid`() = runTest {
         stateMachine.start(Dwelling(Liquid))
 
         stateMachine.observeStateChanges().test {
@@ -48,7 +49,7 @@ class MatterStateMachineTest {
     }
 
     @Test
-    fun `vaporization should move us from liquid to gas`() = runBlocking {
+    fun `vaporization should move us from liquid to gas`() = runTest {
         stateMachine.start(Dwelling(Liquid))
 
         stateMachine.observeStateChanges().test {
@@ -62,7 +63,7 @@ class MatterStateMachineTest {
     }
 
     @Test
-    fun `condensation moves us from gas to liquid`() = runBlocking {
+    fun `condensation moves us from gas to liquid`() = runTest {
         stateMachine.start(Dwelling(Gas))
 
         stateMachine.observeStateChanges().test {

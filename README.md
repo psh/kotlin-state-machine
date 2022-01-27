@@ -1,9 +1,36 @@
-[![Build Status](https://travis-ci.com/psh/kotlin-state-machine.svg?token=1nouCzPFZQuPA3QYtpm8&branch=master)](https://travis-ci.com/psh/kotlin-state-machine)
+[![ktlint](https://img.shields.io/badge/Kotlin%20Multiplatform-%E2%9D%A4-FF4081)](https://kotlinlang.org/docs/multiplatform.html)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Build Status](https://travis-ci.com/psh/kotlin-state-machine.svg?token=1nouCzPFZQuPA3QYtpm8&branch=master)](https://travis-ci.com/psh/kotlin-state-machine)
 [![Current Version](https://img.shields.io/badge/Version-0.1.0-1abc9c.svg)](https://shields.io/)
 [![ktlint](https://img.shields.io/badge/code%20style-%E2%9D%A4-FF4081.svg)](https://ktlint.github.io/)
 
 # kotlin-state-machine
+
+Some pointers to the layout of this project - 
+* Code lives in `commonMain` as the state machine itself is a multiplatform library.
+* Tests live in `commonTest` and should always pass for ALL platforms. 
+* Examples use the library published to your `mavenLocal` repo to best simulate end-user usage scenarios.  Run the `publishToMavenLocal` gradle task before running the examples and all should be fine. 
+
+## Roadmap
+* Version **0.1.0** 
+  * introduced the state machine and its declarative DSL for defining states and transitions
+  * built as a traditional JVM library. 
+* Version **0.2.0**
+    * Embraced Kotlin multiplatform  
+    * Use the Gradle version catalog to simplify the build
+    * NOTE: this library is built against the **NEW** native memory module introduced in Kotlin 1.6.10
+* Version **0.3.0** 
+  * Execute state transitions as coroutines
+* Version **0.4.0**
+  * Move the tests into `commonTest` so they can be run across all platforms
+* Version **0.5.0**
+  * Full DSL / API review to ensure that it makes sense
+  * Work through the callback and coroutines API to make sure that it also makes sense
+* Version **0.6.0**
+  * Overhaul of the documentation to reflect current state
+* Publish the library to Maven Central 
+
+Somewhere along the way, there need to be additional examples written, for JS, native, Android and iOS.
 
 ## Example State Machine
 
@@ -209,10 +236,68 @@ graph {
 }
 ```
 
+## Observing State Changes
+
+Suppose you have a basic state machine
+```kotlin
+val stateMachine = graph {
+    initialState(Solid)
+
+    state(Solid) { ... }
+    state(Liquid) { ... }
+    state(Gas) { ... }
+}
+```
+
+The graph you build is *observable* - you can observe either the states themselves as things change over time, or the lower-level state transitions (that includes edge traversal)
+
+```kotlin
+stateMachine.observeState().collect { state ->
+    // called with each state that we land in eg, Solid or Gas
+}
+
+stateMachine.observeStateChanges().collect { machineState ->
+    // called when dwelling on a particular node, 
+    // eg, MachineState.Dwelling( Gas )
+    //
+    // or when traversing an edge of the graph,
+    // eg, MachineState.Traversing( Liquid to Gas )
+}
+
+```
+
+## Starting The Machine At A Given State
+
+State machines are defined to be in an _inactive_ state when they are first defined (the large black dot on the state
+diagram). A call to `start()` is required to make the initial transition into the defined _initialState_. Optionally a _machine state_
+can be passed into the `start()` method to start the state machine at an arbitrary node in the graph. The state machine
+allows either `Inactive` or `Dwelling` machine states to start and will throw an exception if you try to start
+with `Traversing`.
+
+```kotlin
+@Test
+fun `freezing should move us from liquid to solid`() {
+    // Given
+    stateMachine.start(Dwelling(Liquid))
+
+    // When
+    stateMachine.consume(OnFrozen)
+
+    // Then
+    assertEquals(Solid, stateMachine.currentState.id)
+}
+```
+
+The `start()` method can be called at any time (and even multiple times) to reset the state machine to a given node in
+the graph.
+
 ## Conditional & Long Running Transitions
 
+**NOTE** This section of the library is in-flux and subject to deep changes
+
 By default, state transitions are instantaneous and never fail. You can supply a block of code that will override that
-behavior, allowing for long-running operations that have the option to succeed or fail:
+behavior, allowing for long-running operations that have the option to succeed or fail.  The assumption is that the
+action succeeds, so you only need to notify the state machine if there is a failure:
 
 ```kotlin
 state(Solid) {
@@ -223,10 +308,8 @@ state(Solid) {
         execute { result ->
             /* Do something that might take a while */
 
-            if ( /* some condition */ ) {
-                result.success()
-            } else {
-                result.failure()
+            if ( /* something went wrong */ ) {
+                failure()
             }
         }
     }
@@ -286,59 +369,3 @@ state(Solid) {
 
 Note: Be aware that the state machine _will be left in limbo_ (the transition will never complete) if none of the
 success or failure methods are called.
-
-## Starting The Machine At A Given State
-
-State machines are defined to be in an _inactive_ state when they are first defined (the large black dot on the state
-diagram). A call to `start()` is required to make the initial transition into the defined _initialState_. Optionally a _
-machine state_
-can be passed into the `start()` method to start the state machine at an arbitrary node in the graph. The state machine
-allows either `Inactive` or `Dwelling` machine states to start and will throw an exception if you try to start
-with `Traversing`.
-
-```kotlin
-@Test
-fun `freezing should move us from liquid to solid`() {
-    // Given
-    stateMachine.start(Dwelling(Liquid))
-
-    // When
-    stateMachine.consume(OnFrozen)
-
-    // Then
-    assertEquals(Solid, stateMachine.currentState.id)
-}
-```
-
-The `start()` method can be called at any time (and even multiple times) to reset the state machine to a given node in
-the graph.
-
-## Observing State Changes
-
-Suppose you have a basic state machine
-```kotlin
-val stateMachine = graph {
-    initialState(Solid)
-
-    state(Solid) { ... }
-    state(Liquid) { ... }
-    state(Gas) { ... }
-}
-```
-
-The graph you build is *observable* - you can observe either the states themselves as things change over time, or the lower-level state transitions (that includes edge traversal)
-
-```kotlin
-stateMachine.observeState().collect { state ->
-    // called with each state that we land in eg, Solid or Gas
-}
-
-stateMachine.observeStateChanges().collect { machineState ->
-    // called when dwelling on a particular node, 
-    // eg, MachineState.Dwelling( Gas )
-    //
-    // or when traversing an edge of the graph,
-    // eg, MachineState.Traversing( Liquid to Gas )
-}
-
-```

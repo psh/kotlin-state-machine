@@ -4,7 +4,9 @@ import com.gatebuzz.statemachine.Event
 import com.gatebuzz.statemachine.State
 import com.gatebuzz.statemachine.example.evenodd.EvenOddEvent.*
 import com.gatebuzz.statemachine.example.evenodd.EvenOddState.*
+import com.gatebuzz.statemachine.example.evenodd.RandomNumberRepository.getNumber
 import com.gatebuzz.statemachine.graph
+import kotlinx.coroutines.runBlocking
 
 sealed class EvenOddState : State {
     object Request : EvenOddState()
@@ -27,7 +29,7 @@ val stateMachine = graph {
         onExit { _, event -> println("Exit Request: event = ${event.name()}") }
 
         on(OnCallService) {
-            transitionTo(DecideResult, RandomNumberRepository::getNumber)
+            transitionTo(DecideResult) { getNumber() }
         }
     }
 
@@ -57,7 +59,8 @@ val stateMachine = graph {
 
 private fun Event?.name() = this!!::class.java.simpleName
 
-fun main() {
+fun main() = runBlocking {
     stateMachine.start()
     stateMachine.consume(OnCallService)
 }
+

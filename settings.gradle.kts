@@ -1,8 +1,15 @@
+pluginManagement {
+    repositories {
+        google()
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
+enableFeaturePreview("VERSION_CATALOGS")
+
 rootProject.name = "kotlin-state-machine"
 
-include(":core")
-
-// various examples
 include(
     ":examples:even-odd",
     ":examples:matter",

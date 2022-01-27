@@ -2,9 +2,13 @@ package com.gatebuzz.statemachine
 
 import com.gatebuzz.statemachine.MachineState.Dwelling
 import com.gatebuzz.statemachine.MachineState.Inactive
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.runBlocking
+
+typealias EdgeAction = suspend ActionResult.(Event?) -> Unit
 
 internal class Node(val id: State) {
     var onEnter: StateVisitor = StateVisitor { _, _ -> }
@@ -21,7 +25,7 @@ internal data class Edge internal constructor(val from: Node, val to: Node) {
 
     var onEnter: EdgeVisitor = EdgeVisitor { }
     var onExit: EdgeVisitor = EdgeVisitor { }
-    var action: EdgeAction = EdgeAction { trigger, result -> result.success(trigger) }
+    var action: EdgeAction = {}
 }
 
 internal fun interface EdgeVisitor {
@@ -55,16 +59,16 @@ sealed class MachineState {
 
 class Graph internal constructor(
     var initialState: MachineState = Inactive(),
-    var currentState: MachineState = Inactive()
+    var currentState: MachineState = Inactive(),
+    val dispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
-
     private val nodes: MutableList<Node> = mutableListOf()
     private val edges: MutableList<Edge> = mutableListOf()
     private val edgeTriggers: MutableMap<Event, Edge> = mutableMapOf()
     private val stateObserver: MutableSharedFlow<State> = MutableSharedFlow(replay = 0)
     private val machineStateObserver: MutableSharedFlow<MachineState> = MutableSharedFlow(replay = 0)
 
-    fun start(startingState: MachineState = initialState): Graph {
+    suspend fun start(startingState: MachineState = initialState): Graph {
         if (startingState is MachineState.Traversing) {
             throw IllegalArgumentException("Invalid initial state")
         }
@@ -74,11 +78,13 @@ class Graph internal constructor(
             val state = currentState as Dwelling
             state.node.onEnter.accept(state.node.id, null)
         }
-        runBlocking { notifyStateChange(currentState) }
+
+        CoroutineScope(dispatcher).run { notifyStateChange(currentState) }
+
         return this
     }
 
-    fun consume(event: Event) {
+    suspend fun consume(event: Event) {
         val edge = edgeTriggers[event]
         edge?.let {
             if (currentState is Dwelling && (currentState as Dwelling).node == edge.from) {
@@ -87,12 +93,12 @@ class Graph internal constructor(
         }
     }
 
-    fun transitionTo(state: State, trigger: Event? = null): State? {
+    suspend fun transitionTo(state: State, trigger: Event? = null): State? {
         val validNode = findNode(state) ?: return null
         return doTransition(validNode, trigger)
     }
 
-    internal fun transitionTo(node: Node, trigger: Event? = null): State? {
+    internal suspend fun transitionTo(node: Node, trigger: Event? = null): State? {
         val validNode = findNode(node.id) ?: return null
         return doTransition(validNode, trigger)
     }
@@ -127,54 +133,54 @@ class Graph internal constructor(
         edgeTriggers[event] = edge
     }
 
-    private fun doTransition(node: Node, trigger: Event?): State? = when (currentState) {
+    private suspend fun doTransition(node: Node, trigger: Event?): State? = when (currentState) {
         is Dwelling -> moveViaEdge(Edge((currentState as Dwelling).node, node), trigger)
         is Inactive -> moveDirectly(node, trigger)
         else -> null
     }
 
-    private fun moveViaEdge(edge: Edge, trigger: Event?): State {
+    private suspend fun moveViaEdge(edge: Edge, trigger: Event?): State {
         val registeredEdge = edges.find { it == edge } ?: edge
         registeredEdge.from.onExit.accept(registeredEdge.from.id, trigger)
 
         val visibleEdge = registeredEdge.from.id to registeredEdge.to.id
         registeredEdge.onEnter.accept(visibleEdge)
-        registeredEdge.action.execute(
-            trigger,
-            object : ResultEmitter {
-                override fun success(trigger: Event?) {
-                    runBlocking { notifyStateChange(MachineState.Traversing(edge = registeredEdge, trigger = trigger)) }
-                    registeredEdge.onExit.accept(visibleEdge)
-                    currentState = Dwelling(edge.to)
-                    runBlocking { notifyStateChange(currentState) }
-                    if (registeredEdge.to.decision != null) {
-                        registeredEdge.to.decision?.decide(registeredEdge.to.id, trigger)?.let {
-                            consume(it)
-                        }
-                    } else {
-                        registeredEdge.to.onEnter.accept(registeredEdge.to.id, trigger)
-                    }
-                }
-
-                override fun failAndExit(trigger: Event?) {
-                    registeredEdge.onExit.accept(visibleEdge)
-                    failure(trigger)
-                }
-
-                override fun failure(trigger: Event?) {
-                    currentState = Dwelling(edge.from)
-                    registeredEdge.from.onEnter.accept(edge.from.id, trigger)
-                    runBlocking { notifyStateChange(currentState) }
-                }
+        val captor = ActionResultCaptor()
+        CoroutineScope(dispatcher).run { registeredEdge.action(captor, trigger) }
+        if (captor.success) {
+            CoroutineScope(dispatcher).run {
+                notifyStateChange(
+                    MachineState.Traversing(
+                        edge = registeredEdge,
+                        trigger = trigger
+                    )
+                )
             }
-        )
+            registeredEdge.onExit.accept(visibleEdge)
+            currentState = Dwelling(edge.to)
+            CoroutineScope(dispatcher).run { notifyStateChange(currentState) }
+            if (registeredEdge.to.decision != null) {
+                registeredEdge.to.decision?.decide(registeredEdge.to.id, trigger)?.let {
+                    consume(it)
+                }
+            } else {
+                registeredEdge.to.onEnter.accept(registeredEdge.to.id, trigger)
+            }
+        } else {
+            if (captor.andExit) {
+                registeredEdge.onExit.accept(visibleEdge)
+            }
+            currentState = Dwelling(edge.from)
+            registeredEdge.from.onEnter.accept(edge.from.id, trigger)
+            CoroutineScope(dispatcher).run { notifyStateChange(currentState) }
+        }
         return registeredEdge.to.id
     }
 
-    private fun moveDirectly(node: Node, trigger: Event?): State {
+    private suspend fun moveDirectly(node: Node, trigger: Event?): State {
         currentState = Dwelling(node.id)
         node.onEnter.accept(node.id, trigger)
-        runBlocking { notifyStateChange(currentState) }
+        CoroutineScope(dispatcher).run { notifyStateChange(currentState) }
         return node.id
     }
 
@@ -187,9 +193,7 @@ class Graph internal constructor(
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as Graph
+        if (other !is Graph) return false
 
         if (initialState != other.initialState) return false
         if (currentState != other.currentState) return false
@@ -207,5 +211,19 @@ class Graph internal constructor(
         result = 31 * result + edges.hashCode()
         result = 31 * result + edgeTriggers.hashCode()
         return result
+    }
+
+    private inner class ActionResultCaptor : ActionResult {
+        var success = true
+        var andExit = false
+
+        override fun fail() {
+            success = false
+        }
+
+        override fun failAndExit() {
+            success = false
+            andExit = true
+        }
     }
 }

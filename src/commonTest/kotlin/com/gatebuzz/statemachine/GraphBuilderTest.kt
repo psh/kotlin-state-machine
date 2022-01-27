@@ -4,36 +4,40 @@ import com.gatebuzz.statemachine.MachineState.Dwelling
 import com.gatebuzz.statemachine.TestEvents.OtherTestEvent
 import com.gatebuzz.statemachine.TestEvents.TestEvent
 import com.gatebuzz.statemachine.TestState.*
-import io.mockk.Called
-import io.mockk.mockk
-import io.mockk.verify
-import io.mockk.verifyOrder
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Test
+import com.gatebuzz.verification.TestActionResult
+import com.gatebuzz.verification.TestEdgeVisitor
+import com.gatebuzz.verification.TestStateVisitor
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
+import kotlin.test.*
 
+@ExperimentalCoroutinesApi
 class GraphBuilderTest {
 
-    private val enterA: StateVisitor = mockk(relaxed = true)
-    private val exitA: StateVisitor = mockk(relaxed = true)
-    private val enterB: StateVisitor = mockk(relaxed = true)
-    private val exitB: StateVisitor = mockk(relaxed = true)
+    private val enterA = TestStateVisitor()
+    private val exitA = TestStateVisitor()
+    private val enterB = TestStateVisitor()
+    private val exitB = TestStateVisitor()
 
-    private val enterEdgeAB: EdgeVisitor = mockk(relaxed = true)
-    private val exitEdgeAB: EdgeVisitor = mockk(relaxed = true)
-    private val edgeActionAB: EdgeAction = mockk(relaxed = true)
-    private val edgeActionBA: EdgeAction = mockk(relaxed = true)
+    private val enterEdgeAB: TestEdgeVisitor = TestEdgeVisitor()
+    private val exitEdgeAB: TestEdgeVisitor = TestEdgeVisitor()
+
+    private var edgeActionABCalled = false
+    private var edgeActionBACalled = false
+    private val edgeActionAB: EdgeAction = { edgeActionABCalled = true }
+    private val edgeActionBA: EdgeAction = { edgeActionBACalled = true }
+    private val actionResult: TestActionResult = TestActionResult()
 
     //region build a graph from nodes and events
     @Test
-    fun `create empty graph`() {
+    fun createEmptyGraph() = runTest {
         val testObject = graph {}
         val expected = Graph()
         assertEquals(expected, testObject)
     }
 
     @Test
-    fun `add a node`() {
+    fun addNode() = runTest {
         val testObject = graph {
             state(StateA)
         }
@@ -45,7 +49,7 @@ class GraphBuilderTest {
     }
 
     @Test
-    fun `add more nodes`() {
+    fun addMoreNodes() = runTest {
         val testObject = graph {
             state(StateA)
             state(StateB)
@@ -61,7 +65,7 @@ class GraphBuilderTest {
     }
 
     @Test
-    fun `available edges without events`() {
+    fun availableEdgesWithoutEvents() = runTest {
         val testObject = graph {
             state(StateA) {
                 allows(StateB)
@@ -88,7 +92,7 @@ class GraphBuilderTest {
     }
 
     @Test
-    fun `initial state`() {
+    fun initialState() = runTest {
         val testObject = graph {
             initialState(StateA)
             state(StateA)
@@ -102,7 +106,7 @@ class GraphBuilderTest {
     }
 
     @Test
-    fun `add event`() {
+    fun addEvent() = runTest {
         val testObject = graph {
             initialState(StateA)
             state(StateB)
@@ -128,7 +132,7 @@ class GraphBuilderTest {
 
     //region simple state transition
     @Test
-    fun `transition to new state`() {
+    fun transitionToNewState() = runTest {
         val testObject = graph {
             initialState(StateA)
             state(StateA)
@@ -143,7 +147,7 @@ class GraphBuilderTest {
     }
 
     @Test
-    fun `cannot transition to nodes outside of the graph`() {
+    fun cannotTransitionToNodesOutsideOfTheGraph() = runTest {
         val testObject = graph {
             initialState(StateA)
             state(StateA)
@@ -160,7 +164,7 @@ class GraphBuilderTest {
 
     //region entry & exit actions
     @Test
-    fun `state entry actions are executed when starting`() {
+    fun stateEntryActionsAreExecutedWhenStarting() = runTest {
         val testObject = graph {
             initialState(StateA)
             state(StateA) { onEnter(enterA::accept) }
@@ -169,11 +173,13 @@ class GraphBuilderTest {
 
         testObject.start()
 
-        verify { enterA.accept(StateA, null) }
+        assertTrue(enterA.wasCalled)
+        assertEquals(StateA, enterA.state)
+        assertEquals(null, enterA.trigger)
     }
 
     @Test
-    fun `state entry actions are executed when traversing`() {
+    fun stateEntryActionsAreExecutedWhenTraversing() = runTest {
         val testObject = graph {
             initialState(StateA)
             state(StateA) { onEnter(enterA::accept) }
@@ -183,14 +189,13 @@ class GraphBuilderTest {
 
         testObject.transitionTo(StateB)
 
-        verifyOrder {
-            enterA.accept(StateA, null)
-            enterB.accept(StateB, null)
-        }
+        assertTrue(enterA wasCalledBefore enterB)
+        assertEquals(StateA, enterA.state)
+        assertEquals(StateB, enterB.state)
     }
 
     @Test
-    fun `traversal on enter is executed`() {
+    fun traversalOnEnterIsExecuted() = runTest {
         val testObject = graph {
             initialState(StateA)
             state(StateA) {
@@ -206,15 +211,17 @@ class GraphBuilderTest {
 
         testObject.transitionTo(StateB)
 
-        verifyOrder {
-            enterA.accept(StateA, null)
-            enterEdgeAB.accept(StateA to StateB)
-            enterB.accept(StateB, null)
-        }
+        assertTrue(
+            enterA wasCalledBefore enterEdgeAB &&
+                    enterEdgeAB wasCalledBefore enterB
+        )
+        assertEquals(StateA, enterA.state)
+        assertEquals(StateA to StateB, enterEdgeAB.edge)
+        assertEquals(StateB, enterB.state)
     }
 
     @Test
-    fun `state exit actions are executed when traversing`() {
+    fun stateExitActionsAreExecutedWhenTraversing() = runTest {
         val testObject = graph {
             initialState(StateA)
             state(StateA) { onExit(exitA::accept) }
@@ -224,11 +231,12 @@ class GraphBuilderTest {
 
         testObject.transitionTo(StateB)
 
-        verify { exitA.accept(StateA, null) }
+        assertTrue(exitA.wasCalled)
+        assertEquals(StateA, exitA.state)
     }
 
     @Test
-    fun `traversal on exit is executed`() {
+    fun traversalOnExitIsExecuted() = runTest {
         val testObject = graph {
             initialState(StateA)
             state(StateA) {
@@ -244,14 +252,13 @@ class GraphBuilderTest {
 
         testObject.transitionTo(StateB)
 
-        verifyOrder {
-            exitA.accept(StateA, null)
-            exitEdgeAB.accept(StateA to StateB)
-        }
+        assertTrue(exitA wasCalledBefore exitEdgeAB)
+        assertEquals(StateA, exitA.state)
+        assertEquals(StateA to StateB, exitEdgeAB.edge)
     }
 
     @Test
-    fun `traversal entry and exit created by event`() {
+    fun traversalEntryAndExitCreatedByEvent() = runTest {
         val testObject = graph {
             initialState(StateA)
             state(StateA) {
@@ -269,20 +276,24 @@ class GraphBuilderTest {
             }
         }
         testObject.start()
-        verify { enterA.accept(StateA, null) }
+        assertTrue(enterA.wasCalled)
+        assertEquals(StateA, enterA.state)
 
         testObject.transitionTo(StateB)
 
-        verifyOrder {
-            exitA.accept(StateA, null)
-            enterEdgeAB.accept(StateA to StateB)
-            exitEdgeAB.accept(StateA to StateB)
-            enterB.accept(StateB, null)
-        }
+        assertTrue(
+            exitA wasCalledBefore enterEdgeAB &&
+                    enterEdgeAB wasCalledBefore exitEdgeAB &&
+                    exitEdgeAB wasCalledBefore enterB
+        )
+        assertEquals(StateA, exitA.state)
+        assertEquals(StateA to StateB, enterEdgeAB.edge)
+        assertEquals(StateA to StateB, exitEdgeAB.edge)
+        assertEquals(StateB, enterB.state)
     }
 
     @Test
-    fun `traversal entry and exit created by defined state transition`() {
+    fun traversalEntryAndExitCreatedByDefinedStateTransition() = runTest {
         val testObject = graph {
             initialState(StateA)
             state(StateA) {
@@ -300,20 +311,24 @@ class GraphBuilderTest {
             }
         }
         testObject.start()
-        verify { enterA.accept(StateA, null) }
+        assertTrue(enterA.wasCalled)
+        assertEquals(StateA, enterA.state)
 
         testObject.transitionTo(StateB)
 
-        verifyOrder {
-            exitA.accept(StateA, null)
-            enterEdgeAB.accept(StateA to StateB)
-            exitEdgeAB.accept(StateA to StateB)
-            enterB.accept(StateB, null)
-        }
+        assertTrue(
+            exitA wasCalledBefore enterEdgeAB &&
+                    enterEdgeAB wasCalledBefore exitEdgeAB &&
+                    exitEdgeAB wasCalledBefore enterB
+        )
+        assertEquals(StateA, exitA.state)
+        assertEquals(StateA to StateB, enterEdgeAB.edge)
+        assertEquals(StateA to StateB, exitEdgeAB.edge)
+        assertEquals(StateB, enterB.state)
     }
 
     @Test
-    fun `entry and exit created by allowed transition`() {
+    fun entryAndExitCreatedByAllowedTransition() = runTest {
         val testObject = graph {
             initialState(StateA)
             state(StateA) {
@@ -327,28 +342,25 @@ class GraphBuilderTest {
             }
         }
         testObject.start()
-        verify { enterA.accept(StateA, null) }
+        assertTrue(enterA.wasCalled)
+        assertEquals(StateA, enterA.state)
 
         testObject.transitionTo(StateB)
 
-        verifyOrder {
-            exitA.accept(StateA, null)
-            enterB.accept(StateB, null)
-        }
+        assertTrue(exitA wasCalledBefore enterB)
+        assertEquals(StateA, exitA.state)
+        assertEquals(StateB, enterB.state)
     }
     //endregion
 
     //region traversal actions
     @Test
-    fun `traversal action is executed when edge is defined by event`() {
+    fun traversalActionIsExecutedWhenEdgeIsDefinedByEvent() = runTest {
         val testObject = graph {
             initialState(StateA)
             state(StateA) {
                 on(TestEvent) {
-                    transitionTo(StateB) { trigger, result ->
-                        edgeActionAB.execute(trigger, result)
-                        result.success(trigger)
-                    }
+                    transitionTo(StateB) { edgeActionAB.invoke(actionResult, it) }
                 }
             }
             state(StateB)
@@ -357,20 +369,17 @@ class GraphBuilderTest {
 
         testObject.transitionTo(StateB)
 
-        verify { edgeActionAB.execute(any(), ofType()) }
+        assertTrue(edgeActionABCalled)
     }
 
     @Test
-    fun `traversal action is executed - long form`() {
+    fun traversalActionIsExecutedLongForm() = runTest {
         val testObject = graph {
             initialState(StateA)
             state(StateA) {
                 on(TestEvent) {
                     transitionTo(StateB)
-                    execute { trigger, result ->
-                        edgeActionAB.execute(trigger, result)
-                        result.success(trigger)
-                    }
+                    execute { edgeActionAB.invoke(actionResult, it) }
                 }
             }
             state(StateB)
@@ -379,19 +388,16 @@ class GraphBuilderTest {
 
         testObject.transitionTo(StateB)
 
-        verify { edgeActionAB.execute(any(), ofType()) }
+        assertTrue(edgeActionABCalled)
     }
 
     @Test
-    fun `traversal action is executed when edge is defined by state`() {
+    fun traversalActionIsExecutedWhenEdgeIsDefinedByState() = runTest {
         val testObject = graph {
             initialState(StateA)
             state(StateA) {
                 onTransitionTo(StateB) {
-                    execute { trigger, result ->
-                        edgeActionAB.execute(trigger, result)
-                        result.success(trigger)
-                    }
+                    execute { edgeActionAB.invoke(actionResult, it) }
                 }
             }
             state(StateB)
@@ -400,11 +406,11 @@ class GraphBuilderTest {
 
         testObject.transitionTo(StateB)
 
-        verify { edgeActionAB.execute(any(), ofType()) }
+        assertTrue(edgeActionABCalled)
     }
 
     @Test
-    fun `traversal succeeds`() {
+    fun traversalSucceedsByDefault() = runTest {
         val testObject = graph {
             initialState(StateA)
             state(StateA) {
@@ -413,9 +419,7 @@ class GraphBuilderTest {
                 on(TestEvent) {
                     onEnter(enterEdgeAB::accept)
                     onExit(exitEdgeAB::accept)
-                    transitionTo(StateB) { trigger, result ->
-                        result.success(trigger)
-                    }
+                    transitionTo(StateB) { }
                 }
             }
             state(StateB) {
@@ -424,20 +428,25 @@ class GraphBuilderTest {
             }
         }
         testObject.start()
-        verify { enterA.accept(StateA, null) }
+        assertTrue(enterA.wasCalled)
+        assertEquals(StateA, enterA.state)
 
         testObject.transitionTo(StateB)
 
-        verifyOrder {
-            exitA.accept(StateA, null)
-            enterEdgeAB.accept(StateA to StateB)
-            exitEdgeAB.accept(StateA to StateB)
-            enterB.accept(StateB, null)
-        }
+        assertTrue(
+            exitA wasCalledBefore enterEdgeAB &&
+                    enterEdgeAB wasCalledBefore exitEdgeAB &&
+                    exitEdgeAB wasCalledBefore enterB
+        )
+
+        assertEquals(StateA, exitA.state)
+        assertEquals(StateA to StateB, enterEdgeAB.edge)
+        assertEquals(StateA to StateB, exitEdgeAB.edge)
+        assertEquals(StateB, enterB.state)
     }
 
     @Test
-    fun `traversal fails`() {
+    fun traversalFails() = runTest {
         val testObject = graph {
             initialState(StateA)
             state(StateA) {
@@ -446,9 +455,7 @@ class GraphBuilderTest {
                 on(TestEvent) {
                     onEnter(enterEdgeAB::accept)
                     onExit(exitEdgeAB::accept)
-                    transitionTo(StateB) { trigger, result ->
-                        result.failure(trigger)
-                    }
+                    transitionTo(StateB) { fail() }
                 }
             }
             state(StateB) {
@@ -457,20 +464,20 @@ class GraphBuilderTest {
             }
         }
         testObject.start()
-        verify { enterA.accept(StateA, null) }
+        assertTrue(enterA.wasCalled)
+        assertEquals(StateA, enterA.state)
 
         testObject.transitionTo(StateB)
 
-        verifyOrder {
-            exitA.accept(StateA, null)
-            enterEdgeAB.accept(StateA to StateB)
-        }
-        verify(exactly = 0) { exitEdgeAB.accept(StateA to StateB) }
-        verify(exactly = 0) { enterB.accept(StateB, null) }
+        assertTrue(exitA wasCalledBefore enterEdgeAB)
+        assertEquals(StateA, exitA.state)
+        assertEquals(StateA to StateB, enterEdgeAB.edge)
+        assertTrue(exitEdgeAB.wasNotCalled)
+        assertTrue(enterB.wasNotCalled)
     }
 
     @Test
-    fun `traversal fail but exit still desired`() {
+    fun traversalFailButExitStillDesired() = runTest {
         val testObject = graph {
             initialState(StateA)
             state(StateA) {
@@ -479,9 +486,7 @@ class GraphBuilderTest {
                 on(TestEvent) {
                     onEnter(enterEdgeAB::accept)
                     onExit(exitEdgeAB::accept)
-                    transitionTo(StateB) { trigger, result ->
-                        result.failAndExit(trigger)
-                    }
+                    transitionTo(StateB) { failAndExit() }
                 }
             }
             state(StateB) {
@@ -490,30 +495,29 @@ class GraphBuilderTest {
             }
         }
         testObject.start()
-        verify { enterA.accept(StateA, null) }
+        assertTrue(enterA.wasCalled)
+        assertEquals(StateA, enterA.state)
 
         testObject.transitionTo(StateB)
 
-        verifyOrder {
-            exitA.accept(StateA, null)
-            enterEdgeAB.accept(StateA to StateB)
-            exitEdgeAB.accept(StateA to StateB)
-        }
-        verify(exactly = 0) { enterB.accept(StateB, null) }
+        assertTrue(
+            exitA wasCalledBefore enterEdgeAB && enterEdgeAB wasCalledBefore exitEdgeAB
+        )
+        assertEquals(StateA, exitA.state)
+        assertEquals(StateA to StateB, enterEdgeAB.edge)
+        assertEquals(StateA to StateB, exitEdgeAB.edge)
+        assertTrue(enterB.wasNotCalled)
     }
     //endregion
 
     //region event driven transition
     @Test
-    fun `traversal action is executed on event`() {
+    fun traversalActionIsExecutedOnEvent() = runTest {
         val testObject = graph {
             initialState(StateA)
             state(StateA) {
                 on(TestEvent) {
-                    transitionTo(StateB) { trigger, result ->
-                        edgeActionAB.execute(trigger, result)
-                        result.success(trigger)
-                    }
+                    transitionTo(StateB) { edgeActionAB.invoke(actionResult, it) }
                 }
             }
             state(StateB)
@@ -522,27 +526,21 @@ class GraphBuilderTest {
 
         testObject.consume(TestEvent)
 
-        verify { edgeActionAB.execute(any(), ofType()) }
+        assertTrue(edgeActionABCalled)
     }
 
     @Test
-    fun `event is ignored if we are in the wrong state`() {
+    fun eventIsIgnoredIfWeAreInTheWrongState() = runTest {
         val testObject = graph {
             initialState(StateA)
             state(StateA) {
                 on(TestEvent) {
-                    transitionTo(StateB) { trigger, result ->
-                        edgeActionAB.execute(trigger, result)
-                        result.success(trigger)
-                    }
+                    transitionTo(StateB) { edgeActionAB.invoke(actionResult, it) }
                 }
             }
             state(StateB) {
                 on(OtherTestEvent) {
-                    transitionTo(StateA) { trigger, result ->
-                        edgeActionBA.execute(trigger, result)
-                        result.success(trigger)
-                    }
+                    transitionTo(StateA) { edgeActionBA.invoke(actionResult, it) }
                 }
             }
         }
@@ -550,13 +548,14 @@ class GraphBuilderTest {
 
         testObject.consume(OtherTestEvent)
 
-        verify { listOf(edgeActionAB, edgeActionBA) wasNot Called }
+        assertFalse(edgeActionABCalled)
+        assertFalse(edgeActionBACalled)
     }
     //endregion
 
     //region decision states
     @Test
-    fun `decisions produce events causing transitions`() {
+    fun decisionsProduceEventsCausingTransitions() = runTest {
         val testObject = graph {
             initialState(StateA)
             state(StateA) {
@@ -577,7 +576,7 @@ class GraphBuilderTest {
     }
 
     @Test
-    fun `null result from a decision causes no transition`() {
+    fun nullResultFromADecisionCausesNoTransition() = runTest {
         val testObject = graph {
             initialState(StateA)
             state(StateA) {
@@ -598,7 +597,7 @@ class GraphBuilderTest {
     }
 
     @Test
-    fun `unhandled event from a decision causes no transition`() {
+    fun unhandledEventFromADecisionCausesNoTransition() = runTest {
         val testObject = graph {
             initialState(StateA)
             state(StateA) {

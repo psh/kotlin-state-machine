@@ -3,61 +3,56 @@ package com.gatebuzz.statemachine.example.matter
 import com.gatebuzz.statemachine.MachineState.Dwelling
 import com.gatebuzz.statemachine.example.matter.MatterEvent.*
 import com.gatebuzz.statemachine.example.matter.MatterState.*
-import io.mockk.mockk
-import io.mockk.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Before
 import org.junit.Test
 
+@ExperimentalCoroutinesApi
 class MatterStateMachineTest {
-    @Before
-    fun setUp() {
-        logger = mockk(relaxed = true)
-    }
-
     @Test
-    fun `initial state should be solid`() {
+    fun `initial state should be solid`() = runTest {
         stateMachine.start()
         assertEquals(Solid, stateMachine.currentState.id)
     }
 
     @Test
-    fun `melting should move us from solid to liquid`() {
+    fun `melting should move us from solid to liquid`() = runTest {
         stateMachine.start(Dwelling(Solid))
 
         stateMachine.consume(OnMelted)
 
         assertEquals(Liquid, stateMachine.currentState.id)
-        verify { logger.log(ON_MELTED_MESSAGE) }
+        assertEquals(ON_MELTED_MESSAGE, TestLogger.latest)
     }
 
     @Test
-    fun `freezing should move us from liquid to solid`() {
+    fun `freezing should move us from liquid to solid`() = runTest {
         stateMachine.start(Dwelling(Liquid))
 
         stateMachine.consume(OnFrozen)
 
         assertEquals(Solid, stateMachine.currentState.id)
-        verify { logger.log(ON_FROZEN_MESSAGE) }
+        assertEquals(ON_FROZEN_MESSAGE, TestLogger.latest)
     }
 
     @Test
-    fun `vaporization should move us from liquid to gas`() {
+    fun `vaporization should move us from liquid to gas`() = runTest {
         stateMachine.start(Dwelling(Liquid))
 
         stateMachine.consume(OnVaporized)
 
         assertEquals(Gas, stateMachine.currentState.id)
-        verify { logger.log(ON_VAPORIZED_MESSAGE) }
+        assertEquals(ON_VAPORIZED_MESSAGE, TestLogger.latest)
     }
 
     @Test
-    fun `condensation moves us from gas to liquid`() {
+    fun `condensation moves us from gas to liquid`() = runTest {
         stateMachine.start(Dwelling(Gas))
 
         stateMachine.consume(OnCondensed)
 
         assertEquals(Liquid, stateMachine.currentState.id)
-        verify { logger.log(ON_CONDENSED_MESSAGE) }
+        assertEquals(ON_CONDENSED_MESSAGE, TestLogger.latest)
     }
 }

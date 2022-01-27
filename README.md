@@ -1,7 +1,7 @@
 [![ktlint](https://img.shields.io/badge/Kotlin%20Multiplatform-%E2%9D%A4-FF4081)](https://kotlinlang.org/docs/multiplatform.html)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Build Status](https://travis-ci.com/psh/kotlin-state-machine.svg?token=1nouCzPFZQuPA3QYtpm8&branch=master)](https://travis-ci.com/psh/kotlin-state-machine)
-[![Current Version](https://img.shields.io/badge/Version-0.1.0-1abc9c.svg)](https://shields.io/)
+[![Current Version](https://img.shields.io/badge/Version-0.4.0-1abc9c.svg)](https://shields.io/)
 [![ktlint](https://img.shields.io/badge/code%20style-%E2%9D%A4-FF4081.svg)](https://ktlint.github.io/)
 
 # kotlin-state-machine

@@ -211,10 +211,7 @@ class GraphBuilderTest {
 
         testObject.transitionTo(StateB)
 
-        assertTrue(
-            enterA wasCalledBefore enterEdgeAB &&
-                    enterEdgeAB wasCalledBefore enterB
-        )
+        assertTrue(enterA wasCalledBefore enterEdgeAB && enterEdgeAB wasCalledBefore enterB)
         assertEquals(StateA, enterA.state)
         assertEquals(StateA to StateB, enterEdgeAB.edge)
         assertEquals(StateB, enterB.state)
@@ -281,11 +278,7 @@ class GraphBuilderTest {
 
         testObject.transitionTo(StateB)
 
-        assertTrue(
-            exitA wasCalledBefore enterEdgeAB &&
-                    enterEdgeAB wasCalledBefore exitEdgeAB &&
-                    exitEdgeAB wasCalledBefore enterB
-        )
+        assertTrue(exitA wasCalledBefore enterEdgeAB && enterEdgeAB wasCalledBefore exitEdgeAB && exitEdgeAB wasCalledBefore enterB)
         assertEquals(StateA, exitA.state)
         assertEquals(StateA to StateB, enterEdgeAB.edge)
         assertEquals(StateA to StateB, exitEdgeAB.edge)
@@ -317,9 +310,7 @@ class GraphBuilderTest {
         testObject.transitionTo(StateB)
 
         assertTrue(
-            exitA wasCalledBefore enterEdgeAB &&
-                    enterEdgeAB wasCalledBefore exitEdgeAB &&
-                    exitEdgeAB wasCalledBefore enterB
+            exitA wasCalledBefore enterEdgeAB && enterEdgeAB wasCalledBefore exitEdgeAB && exitEdgeAB wasCalledBefore enterB
         )
         assertEquals(StateA, exitA.state)
         assertEquals(StateA to StateB, enterEdgeAB.edge)
@@ -433,11 +424,7 @@ class GraphBuilderTest {
 
         testObject.transitionTo(StateB)
 
-        assertTrue(
-            exitA wasCalledBefore enterEdgeAB &&
-                    enterEdgeAB wasCalledBefore exitEdgeAB &&
-                    exitEdgeAB wasCalledBefore enterB
-        )
+        assertTrue(exitA wasCalledBefore enterEdgeAB && enterEdgeAB wasCalledBefore exitEdgeAB && exitEdgeAB wasCalledBefore enterB)
 
         assertEquals(StateA, exitA.state)
         assertEquals(StateA to StateB, enterEdgeAB.edge)

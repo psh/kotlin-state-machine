@@ -304,9 +304,8 @@ class GraphTest {
         testObject.transitionTo(StateB)
 
         assertTrue(
-            onExitA wasCalledBefore onEnterEdgeAB &&
-                    onEnterEdgeAB wasCalledBefore onExitEdgeAB &&
-                    onExitEdgeAB wasCalledBefore onEnterB
+            onExitA wasCalledBefore onEnterEdgeAB && onEnterEdgeAB wasCalledBefore onExitEdgeAB &&
+                onExitEdgeAB wasCalledBefore onEnterB
         )
         assertEquals(StateA, onExitA.state)
         assertEquals(StateA to StateB, onEnterEdgeAB.edge)
@@ -348,8 +347,8 @@ class GraphTest {
 
         assertTrue(
             onExitA wasCalledBefore onEnterEdgeAB &&
-                    onEnterEdgeAB wasCalledBefore onExitEdgeAB &&
-                    onExitEdgeAB wasCalledBefore onEnterB
+                onEnterEdgeAB wasCalledBefore onExitEdgeAB &&
+                onExitEdgeAB wasCalledBefore onEnterB
         )
         assertEquals(StateA, onExitA.state)
         assertEquals(StateA to StateB, onEnterEdgeAB.edge)
@@ -490,9 +489,9 @@ class GraphTest {
 
         assertTrue(
             onEnterA wasCalledBefore onExitA &&
-                    onExitA wasCalledBefore decision &&
-                    decision wasCalledBefore onExitB &&
-                    onExitB wasCalledBefore onEnterC
+                onExitA wasCalledBefore decision &&
+                decision wasCalledBefore onExitB &&
+                onExitB wasCalledBefore onEnterC
         )
         assertEquals(StateA, onEnterA.state)
         assertEquals(StateB, decision.state)
@@ -523,7 +522,7 @@ class GraphTest {
 
         assertTrue(
             onEnterA wasCalledBefore onExitA &&
-                    onExitA wasCalledBefore decision
+                onExitA wasCalledBefore decision
         )
         assertTrue(onEnterB.wasNotCalled)
         assertTrue(onExitB.wasNotCalled)

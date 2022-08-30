@@ -84,7 +84,8 @@ class Graph internal constructor(
     suspend fun consume(event: Event) {
         if (currentState is Dwelling) {
             val state = currentState as Dwelling
-            state.node.edgeTriggers[event]?.let {
+            val validNode = findNode(state.id)
+            validNode?.edgeTriggers?.get(event)?.let {
                 moveViaEdge(it, event)
             }
         }

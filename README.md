@@ -1,3 +1,4 @@
+![GitHub top language](https://img.shields.io/github/languages/top/psh/kotlin-state-machine)
 [![ktlint](https://img.shields.io/badge/Kotlin%20Multiplatform-%E2%9D%A4-FF4081)](https://kotlinlang.org/docs/multiplatform.html)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Build Status](https://travis-ci.com/psh/kotlin-state-machine.svg?token=1nouCzPFZQuPA3QYtpm8&branch=main)](https://travis-ci.com/psh/kotlin-state-machine)

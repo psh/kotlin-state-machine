@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 typealias EdgeAction = suspend ActionResult.(Event?) -> Unit
 
 internal class Node(val id: State) {
+    val edgeTriggers: MutableMap<Event, Edge> = mutableMapOf()
     var onEnter: StateVisitor = StateVisitor { _, _ -> }
     var onExit: StateVisitor = StateVisitor { _, _ -> }
     var decision: Decision? = null
@@ -46,11 +47,7 @@ sealed class MachineState {
         internal val edge: Edge,
         override val id: State = CompoundState(edge.from.id, edge.to.id),
         val trigger: Event? = null
-    ) : MachineState() {
-        constructor(edge: Pair<State, State>, trigger: Event? = null) : this(
-            Edge(Node(edge.first), Node(edge.second)), CompoundState(edge.first, edge.second), trigger
-        )
-    }
+    ) : MachineState()
 
     object InactiveState : State
 
@@ -64,7 +61,7 @@ class Graph internal constructor(
 ) {
     private val nodes: MutableList<Node> = mutableListOf()
     private val edges: MutableList<Edge> = mutableListOf()
-    private val edgeTriggers: MutableMap<Event, Edge> = mutableMapOf()
+
     private val stateObserver: MutableSharedFlow<State> = MutableSharedFlow(replay = 0)
     private val machineStateObserver: MutableSharedFlow<MachineState> = MutableSharedFlow(replay = 0)
 
@@ -85,10 +82,10 @@ class Graph internal constructor(
     }
 
     suspend fun consume(event: Event) {
-        val edge = edgeTriggers[event]
-        edge?.let {
-            if (currentState is Dwelling && (currentState as Dwelling).node == edge.from) {
-                moveViaEdge(edge, event)
+        if (currentState is Dwelling) {
+            val state = currentState as Dwelling
+            state.node.edgeTriggers[event]?.let {
+                moveViaEdge(it, event)
             }
         }
     }
@@ -130,7 +127,7 @@ class Graph internal constructor(
     }
 
     internal fun addEvent(event: Event, edge: Edge) {
-        edgeTriggers[event] = edge
+        edge.from.edgeTriggers[event] = edge
     }
 
     private suspend fun doTransition(node: Node, trigger: Event?): State? = when (currentState) {
@@ -199,7 +196,7 @@ class Graph internal constructor(
         if (currentState != other.currentState) return false
         if (nodes.toSet() != other.nodes.toSet()) return false
         if (edges.toSet() != other.edges.toSet()) return false
-        if (edgeTriggers != other.edgeTriggers) return false
+        // if (edgeTriggers != other.edgeTriggers) return false
 
         return true
     }
@@ -209,7 +206,7 @@ class Graph internal constructor(
         result = 31 * result + currentState.hashCode()
         result = 31 * result + nodes.hashCode()
         result = 31 * result + edges.hashCode()
-        result = 31 * result + edgeTriggers.hashCode()
+        // result = 31 * result + edgeTriggers.hashCode()
         return result
     }
 

@@ -3,6 +3,7 @@ build
 .idea
 out
 local.properties
+kotlin-js-store
 
 # Compiled class file
 *.class

@@ -1,6 +1,6 @@
 [![ktlint](https://img.shields.io/badge/Kotlin%20Multiplatform-%E2%9D%A4-FF4081)](https://kotlinlang.org/docs/multiplatform.html)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Build Status](https://travis-ci.com/psh/kotlin-state-machine.svg?token=1nouCzPFZQuPA3QYtpm8&branch=master)](https://travis-ci.com/psh/kotlin-state-machine)
+[![Build Status](https://travis-ci.com/psh/kotlin-state-machine.svg?token=1nouCzPFZQuPA3QYtpm8&branch=main)](https://travis-ci.com/psh/kotlin-state-machine)
 [![Current Version](https://img.shields.io/badge/Version-0.4.0-1abc9c.svg)](https://shields.io/)
 [![ktlint](https://img.shields.io/badge/code%20style-%E2%9D%A4-FF4081.svg)](https://ktlint.github.io/)
 
@@ -23,6 +23,7 @@ Some pointers to the layout of this project -
   * Execute state transitions as coroutines
 * Version **0.4.0**
   * Move the tests into `commonTest` so they can be run across all platforms
+  * Fix reported bugs (thanks Jigar for reporting the issue, and steps to reproduce it)
 * Version **0.5.0**
   * Full DSL / API review to ensure that it makes sense
   * Work through the callback and coroutines API to make sure that it also makes sense
@@ -30,7 +31,7 @@ Some pointers to the layout of this project -
   * Overhaul of the documentation to reflect current state
 * Publish the library to Maven Central 
 
-Somewhere along the way, there need to be additional examples written, for JS, native, Android and iOS.
+Somewhere along the way, there need to be additional examples written, for native, Android and iOS.
 
 ## Example State Machine
 

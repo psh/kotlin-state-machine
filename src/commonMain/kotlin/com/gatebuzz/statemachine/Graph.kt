@@ -65,6 +65,10 @@ class Graph internal constructor(
     private val stateObserver: MutableSharedFlow<State> = MutableSharedFlow(replay = 0)
     private val machineStateObserver: MutableSharedFlow<MachineState> = MutableSharedFlow(replay = 0)
 
+    fun observeState(): Flow<State> = stateObserver
+
+    fun observeStateChanges(): Flow<MachineState> = machineStateObserver
+
     suspend fun start(startingState: MachineState = initialState): Graph {
         if (startingState is MachineState.Traversing) {
             throw IllegalArgumentException("Invalid initial state")
@@ -99,14 +103,6 @@ class Graph internal constructor(
     internal suspend fun transitionTo(node: Node, trigger: Event? = null): State? {
         val validNode = findNode(node.id) ?: return null
         return doTransition(validNode, trigger)
-    }
-
-    fun observeState(): Flow<State> {
-        return stateObserver
-    }
-
-    fun observeStateChanges(): Flow<MachineState> {
-        return machineStateObserver
     }
 
     internal fun findNode(id: State): Node? = nodes.find { it.id == id }
@@ -178,7 +174,9 @@ class Graph internal constructor(
     private suspend fun moveDirectly(node: Node, trigger: Event?): State {
         currentState = Dwelling(node.id)
         node.onEnter.accept(node.id, trigger)
-        CoroutineScope(dispatcher).run { notifyStateChange(currentState) }
+        CoroutineScope(dispatcher).run {
+            notifyStateChange(currentState)
+        }
         return node.id
     }
 

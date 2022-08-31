@@ -10,16 +10,20 @@ fun graph(initBlock: GraphBuilder.() -> Unit): Graph {
 }
 
 @DslMarker
-annotation class GraphBuilderMarker
+@InternalApi
+internal annotation class GraphBuilderMarker
 
 @DslMarker
-annotation class StateBuilderMarker
+@InternalApi
+internal annotation class StateBuilderMarker
 
 @DslMarker
-annotation class EdgeBuilderMarker
+@InternalApi
+internal annotation class EdgeBuilderMarker
 
 @Suppress("unused")
 @GraphBuilderMarker
+@InternalApi
 class GraphBuilder {
     private var initial: State? = null
     private var actionDispatcher: CoroutineDispatcher = Dispatchers.Default
@@ -85,6 +89,7 @@ class GraphBuilder {
 }
 
 @StateBuilderMarker
+@InternalApi
 class StateBuilder(val id: State) {
     internal val events: MutableMap<Event, EdgeBuilder> = mutableMapOf()
     internal val edges: MutableMap<State, EdgeBuilder> = mutableMapOf()
@@ -126,6 +131,7 @@ class StateBuilder(val id: State) {
 }
 
 @EdgeBuilderMarker
+@InternalApi
 class EdgeBuilder(var destination: State? = null) {
     private var enter: EdgeVisitor? = null
     private var exit: EdgeVisitor? = null

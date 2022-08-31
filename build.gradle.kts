@@ -2,16 +2,22 @@ plugins {
     kotlin("multiplatform") version "1.7.10"
     id("org.jlleitschuh.gradle.ktlint") version "10.2.1"
     id("maven-publish")
+    id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.11.0"
 }
 
 val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
-val dependencyProvider = versionCatalog.findDependency("kotlin-state-machine").get()
+val dependencyProvider = versionCatalog.findLibrary("kotlin-state-machine").get()
 group = dependencyProvider.get().module.group
 version = libs.versions.stateMachineVersion.get()
 
 repositories {
     google()
     mavenCentral()
+}
+
+apiValidation {
+    nonPublicMarkers.add("com.gatebuzz.statemachine.InternalApi")
+    ignoredClasses.add("com.gatebuzz.statemachine.InternalApi")
 }
 
 kotlin {
@@ -24,14 +30,6 @@ kotlin {
         withJava()
         testRuns["test"].executionTask.configure {
             useJUnit()
-        }
-    }
-
-    js(IR) {
-        browser {
-            commonWebpackConfig {
-                cssSupport.enabled = true
-            }
         }
     }
 
@@ -60,8 +58,6 @@ kotlin {
         val iosTest by getting
         val jvmMain by getting
         val jvmTest by getting
-        val jsMain by getting
-        val jsTest by getting
         val nativeMain by getting
         val nativeTest by getting
     }

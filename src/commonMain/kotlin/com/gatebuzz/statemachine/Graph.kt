@@ -7,6 +7,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.withContext
 
 typealias EdgeAction = suspend ActionResult.(Event?) -> Unit
 
@@ -140,19 +141,21 @@ class Graph internal constructor(
         val visibleEdge = registeredEdge.from.id to registeredEdge.to.id
         registeredEdge.onEnter.accept(visibleEdge)
         val captor = ActionResultCaptor()
-        CoroutineScope(dispatcher).run { registeredEdge.action(captor, trigger) }
+
+        withContext(dispatcher) {
+            registeredEdge.action(captor, trigger)
+        }
+
         if (captor.success) {
-            CoroutineScope(dispatcher).run {
-                notifyStateChange(
-                    MachineState.Traversing(
-                        edge = registeredEdge,
-                        trigger = trigger
-                    )
+            notifyStateChange(
+                MachineState.Traversing(
+                    edge = registeredEdge,
+                    trigger = trigger
                 )
-            }
+            )
             registeredEdge.onExit.accept(visibleEdge)
             currentState = Dwelling(edge.to)
-            CoroutineScope(dispatcher).run { notifyStateChange(currentState) }
+            notifyStateChange(currentState)
             if (registeredEdge.to.decision != null) {
                 registeredEdge.to.decision?.decide(registeredEdge.to.id, trigger)?.let {
                     consume(it)
@@ -166,7 +169,7 @@ class Graph internal constructor(
             }
             currentState = Dwelling(edge.from)
             registeredEdge.from.onEnter.accept(edge.from.id, trigger)
-            CoroutineScope(dispatcher).run { notifyStateChange(currentState) }
+            notifyStateChange(currentState)
         }
         return registeredEdge.to.id
     }
@@ -195,7 +198,6 @@ class Graph internal constructor(
         if (currentState != other.currentState) return false
         if (nodes.toSet() != other.nodes.toSet()) return false
         if (edges.toSet() != other.edges.toSet()) return false
-        // if (edgeTriggers != other.edgeTriggers) return false
 
         return true
     }
@@ -205,7 +207,6 @@ class Graph internal constructor(
         result = 31 * result + currentState.hashCode()
         result = 31 * result + nodes.hashCode()
         result = 31 * result + edges.hashCode()
-        // result = 31 * result + edgeTriggers.hashCode()
         return result
     }
 

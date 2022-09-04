@@ -30,9 +30,7 @@ class ReuseEventsTest {
                 on(Next) { transitionTo(Four) }
             }
             state(Four)
-        }
-
-        testObject.start()
+        }.start()
 
         testObject.consume(Next)
 

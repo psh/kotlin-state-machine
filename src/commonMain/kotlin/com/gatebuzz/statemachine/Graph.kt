@@ -16,6 +16,7 @@ internal class Node(val id: State) {
     var onEnter: StateVisitor = StateVisitor { _, _ -> }
     var onExit: StateVisitor = StateVisitor { _, _ -> }
     var decision: Decision? = null
+    var subgraph: Graph? = null
 
     override fun equals(other: Any?) = if (other is Node) other.id == id else false
 
@@ -160,6 +161,9 @@ class Graph internal constructor(
                 registeredEdge.to.decision?.decide(registeredEdge.to.id, trigger)?.let {
                     consume(it)
                 }
+            } else if (registeredEdge.to.subgraph != null) {
+                val graph = registeredEdge.to.subgraph!!
+                graph.start()
             } else {
                 registeredEdge.to.onEnter.accept(registeredEdge.to.id, trigger)
             }

@@ -5,8 +5,8 @@ package com.gatebuzz.statemachine
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 
-fun graph(initBlock: GraphBuilder.() -> Unit): Graph {
-    return GraphBuilder().apply(initBlock).build()
+fun graph(initBlock: GraphBuilder.() -> Unit): GraphBuilder {
+    return GraphBuilder().apply(initBlock)
 }
 
 @DslMarker
@@ -27,23 +27,30 @@ internal annotation class EdgeBuilderMarker
 class GraphBuilder {
     private var initial: State? = null
     private var actionDispatcher: CoroutineDispatcher = Dispatchers.Default
-    private val states: MutableList<StateBuilder> = mutableListOf()
+    private val stateBuilders: MutableList<StateBuilder> = mutableListOf()
     private val transitions: MutableList<(MachineState) -> Unit> = mutableListOf()
     private val stateChanges: MutableList<(State) -> Unit> = mutableListOf()
+
+    suspend fun start() = build().start()
 
     fun build(): Graph {
         return Graph(dispatcher = actionDispatcher).apply {
             val allNodes = mutableMapOf<State, Node>().apply {
-                states.forEach { putAll(it.allNodes()) }
+                stateBuilders.forEach { putAll(it.knownNodes()) }
             }
 
-            states.forEach { sb ->
+            stateBuilders.forEach { sb ->
+                if (sb.subgraph != null) {
+                    walkSubgraph(sb, sb.subgraph!!)
+                }
+
                 allNodes[sb.id]?.let { n ->
                     sb.eventProducer?.let {
                         n.decision = Decision { state: State, trigger: Event? -> sb.eventProducer!!(state, trigger) }
                     }
                     sb.enter?.let { n.onEnter = it }
                     sb.exit?.let { n.onExit = it }
+                    sb.subgraph?.let { n.subgraph = it.build() }
                 }
             }
             allNodes.values.forEach { add(it) }
@@ -57,8 +64,26 @@ class GraphBuilder {
         }
     }
 
+    private fun walkSubgraph(parent: StateBuilder, subgraph: GraphBuilder) {
+        subgraph.stateBuilders.forEach {sb ->
+            if (sb.subgraph != null) {
+                walkSubgraph(sb, sb.subgraph!!)
+            }
+
+            if (sb.exitPoint) {
+                sb.allowed = mutableListOf<State>().apply {
+                    addAll(parent.allowed)
+                }
+                sb.events.clear()
+                sb.events.putAll(parent.events)
+                sb.edges.clear()
+                sb.edges.putAll(parent.edges)
+            }
+        }
+    }
+
     private fun Graph.buildGraphEdges(allNodes: MutableMap<State, Node>) {
-        states.forEach { sb ->
+        stateBuilders.forEach { sb ->
             val from = allNodes[sb.id]!!
             sb.allowed.forEach { add(Edge(from, allNodes[it]!!)) }
             sb.edges.forEach { add(it.value.build(from, allNodes)) }
@@ -72,7 +97,7 @@ class GraphBuilder {
     }
 
     fun state(id: State, initBlock: StateBuilder.() -> Unit = {}) {
-        states.add(StateBuilder(id).apply(initBlock))
+        stateBuilders.add(StateBuilder(id).apply(initBlock))
     }
 
     fun initialState(id: State) {
@@ -97,6 +122,8 @@ class StateBuilder(val id: State) {
     internal var exit: StateVisitor? = null
     internal var allowed: MutableList<State> = mutableListOf()
     internal var eventProducer: ((State, Event?) -> Event?)? = null
+    internal var subgraph: GraphBuilder? = null
+    internal var exitPoint: Boolean = false
 
     fun <T : Event> on(event: T, initBlock: EdgeBuilder.() -> Unit) {
         events[event] = EdgeBuilder().apply(initBlock)
@@ -110,7 +137,7 @@ class StateBuilder(val id: State) {
         this.eventProducer = producer
     }
 
-    internal fun allNodes(): Map<State, Node> = mutableSetOf<Node>().apply {
+    internal fun knownNodes(): Map<State, Node> = mutableSetOf<Node>().apply {
         add(Node(id))
         addAll(allowed.map { Node(it) })
         addAll(edges.map { Node(it.value.destination!!) })
@@ -127,6 +154,14 @@ class StateBuilder(val id: State) {
 
     fun allows(vararg states: State) {
         allowed.addAll(states)
+    }
+
+    fun subgraph(subgraph: GraphBuilder) {
+        this.subgraph = subgraph
+    }
+
+    fun exitGraph() {
+        exitPoint = true
     }
 }
 

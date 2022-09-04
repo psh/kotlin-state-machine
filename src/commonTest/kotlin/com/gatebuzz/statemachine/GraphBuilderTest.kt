@@ -1,6 +1,9 @@
 package com.gatebuzz.statemachine
 
 import com.gatebuzz.statemachine.MachineState.Dwelling
+import com.gatebuzz.statemachine.SubgraphEvents.Next
+import com.gatebuzz.statemachine.SubgraphState.StateOne
+import com.gatebuzz.statemachine.SubgraphState.StateTwo
 import com.gatebuzz.statemachine.TestEvents.OtherTestEvent
 import com.gatebuzz.statemachine.TestEvents.TestEvent
 import com.gatebuzz.statemachine.TestState.*
@@ -31,7 +34,7 @@ class GraphBuilderTest {
     //region build a graph from nodes and events
     @Test
     fun createEmptyGraph() = runTest {
-        val testObject = graph {}
+        val testObject = graph {}.build()
         val expected = Graph()
         assertEquals(expected, testObject)
     }
@@ -40,7 +43,7 @@ class GraphBuilderTest {
     fun addNode() = runTest {
         val testObject = graph {
             state(StateA)
-        }
+        }.build()
 
         val expected = Graph().apply {
             add(StateA)
@@ -54,7 +57,7 @@ class GraphBuilderTest {
             state(StateA)
             state(StateB)
             state(StateC)
-        }
+        }.build()
 
         val expected = Graph().apply {
             add(StateA)
@@ -76,7 +79,7 @@ class GraphBuilderTest {
             state(StateC) {
                 allows(StateB)
             }
-        }
+        }.build()
 
         val expected = Graph().apply {
             add(StateA)
@@ -96,7 +99,7 @@ class GraphBuilderTest {
         val testObject = graph {
             initialState(StateA)
             state(StateA)
-        }
+        }.build()
 
         val expected = Graph().apply {
             initialState = Dwelling(StateA)
@@ -113,7 +116,7 @@ class GraphBuilderTest {
             state(StateA) {
                 on(TestEvent) { transitionTo(StateB) }
             }
-        }
+        }.build()
 
         val expected = Graph().apply {
             initialState = Dwelling(StateA)
@@ -137,8 +140,7 @@ class GraphBuilderTest {
             initialState(StateA)
             state(StateA)
             state(StateB)
-        }
-        testObject.start()
+        }.start()
 
         val newState = testObject.transitionTo(StateB)
 
@@ -152,8 +154,7 @@ class GraphBuilderTest {
             initialState(StateA)
             state(StateA)
             state(StateB)
-        }
-        testObject.start()
+        }.start()
 
         val newNode = testObject.transitionTo(StateC)
 
@@ -165,13 +166,11 @@ class GraphBuilderTest {
     //region entry & exit actions
     @Test
     fun stateEntryActionsAreExecutedWhenStarting() = runTest {
-        val testObject = graph {
+        graph {
             initialState(StateA)
             state(StateA) { onEnter(enterA::accept) }
             state(StateB)
-        }
-
-        testObject.start()
+        }.start()
 
         assertTrue(enterA.wasCalled)
         assertEquals(StateA, enterA.state)
@@ -184,8 +183,7 @@ class GraphBuilderTest {
             initialState(StateA)
             state(StateA) { onEnter(enterA::accept) }
             state(StateB) { onEnter(enterB::accept) }
-        }
-        testObject.start()
+        }.start()
 
         testObject.transitionTo(StateB)
 
@@ -206,8 +204,7 @@ class GraphBuilderTest {
                 }
             }
             state(StateB) { onEnter(enterB::accept) }
-        }
-        testObject.start()
+        }.start()
 
         testObject.transitionTo(StateB)
 
@@ -223,8 +220,7 @@ class GraphBuilderTest {
             initialState(StateA)
             state(StateA) { onExit(exitA::accept) }
             state(StateB)
-        }
-        testObject.start()
+        }.start()
 
         testObject.transitionTo(StateB)
 
@@ -244,8 +240,7 @@ class GraphBuilderTest {
                 }
             }
             state(StateB) { onExit(exitB::accept) }
-        }
-        testObject.start()
+        }.start()
 
         testObject.transitionTo(StateB)
 
@@ -271,8 +266,7 @@ class GraphBuilderTest {
                 onEnter(enterB::accept)
                 onExit(exitB::accept)
             }
-        }
-        testObject.start()
+        }.start()
         assertTrue(enterA.wasCalled)
         assertEquals(StateA, enterA.state)
 
@@ -302,8 +296,7 @@ class GraphBuilderTest {
                 onEnter(enterB::accept)
                 onExit(exitB::accept)
             }
-        }
-        testObject.start()
+        }.start()
         assertTrue(enterA.wasCalled)
         assertEquals(StateA, enterA.state)
 
@@ -331,8 +324,7 @@ class GraphBuilderTest {
                 onEnter(enterB::accept)
                 onExit(exitB::accept)
             }
-        }
-        testObject.start()
+        }.start()
         assertTrue(enterA.wasCalled)
         assertEquals(StateA, enterA.state)
 
@@ -355,8 +347,7 @@ class GraphBuilderTest {
                 }
             }
             state(StateB)
-        }
-        testObject.start()
+        }.start()
 
         testObject.transitionTo(StateB)
 
@@ -374,8 +365,7 @@ class GraphBuilderTest {
                 }
             }
             state(StateB)
-        }
-        testObject.start()
+        }.start()
 
         testObject.transitionTo(StateB)
 
@@ -392,8 +382,7 @@ class GraphBuilderTest {
                 }
             }
             state(StateB)
-        }
-        testObject.start()
+        }.start()
 
         testObject.transitionTo(StateB)
 
@@ -417,8 +406,7 @@ class GraphBuilderTest {
                 onEnter(enterB::accept)
                 onExit(exitB::accept)
             }
-        }
-        testObject.start()
+        }.start()
         assertTrue(enterA.wasCalled)
         assertEquals(StateA, enterA.state)
 
@@ -449,8 +437,7 @@ class GraphBuilderTest {
                 onEnter(enterB::accept)
                 onExit(exitB::accept)
             }
-        }
-        testObject.start()
+        }.start()
         assertTrue(enterA.wasCalled)
         assertEquals(StateA, enterA.state)
 
@@ -480,8 +467,7 @@ class GraphBuilderTest {
                 onEnter(enterB::accept)
                 onExit(exitB::accept)
             }
-        }
-        testObject.start()
+        }.start()
         assertTrue(enterA.wasCalled)
         assertEquals(StateA, enterA.state)
 
@@ -508,8 +494,7 @@ class GraphBuilderTest {
                 }
             }
             state(StateB)
-        }
-        testObject.start()
+        }.start()
 
         testObject.consume(TestEvent)
 
@@ -530,8 +515,7 @@ class GraphBuilderTest {
                     transitionTo(StateA) { edgeActionBA.invoke(actionResult, it) }
                 }
             }
-        }
-        testObject.start()
+        }.start()
 
         testObject.consume(OtherTestEvent)
 
@@ -554,8 +538,7 @@ class GraphBuilderTest {
                 on(OtherTestEvent) { transitionTo(StateC) }
             }
             state(StateC)
-        }
-        testObject.start()
+        }.start()
 
         testObject.transitionTo(StateB)
 
@@ -575,8 +558,7 @@ class GraphBuilderTest {
                 on(OtherTestEvent) { transitionTo(StateC) }
             }
             state(StateC)
-        }
-        testObject.start()
+        }.start()
 
         testObject.transitionTo(StateB)
 
@@ -595,12 +577,52 @@ class GraphBuilderTest {
                 on(OtherTestEvent) { transitionTo(StateC) }
             }
             state(StateC)
-        }
-        testObject.start()
+        }.start()
 
         testObject.transitionTo(StateB)
 
         assertEquals(StateB, testObject.currentState.id)
     }
     //endregion
+
+    //region subgraphs
+    @Test
+    fun enterAndExitSubgraph() = runTest {
+        val mySubgraph = graph {
+            initialState(StateOne)
+
+            state(StateOne) {
+                on(Next) { transitionTo(StateTwo) }
+            }
+
+            state(StateTwo) {
+                exitGraph()
+            }
+        }
+        val testObject = graph {
+            initialState(StateA)
+
+            state(StateA) {
+                allows(StateB)
+                on(TestEvent) { transitionTo(StateB) }
+            }
+
+            state(StateB) {
+                subgraph(mySubgraph)
+                on(TestEvent) { transitionTo(StateC) }
+                on(OtherTestEvent) { transitionTo(StateD) }
+            }
+        }.start()
+
+        testObject.consume(TestEvent)
+        assertEquals(StateOne, testObject.currentState.id)
+
+        testObject.consume(Next)
+        assertEquals(StateTwo, testObject.currentState.id)
+
+        testObject.consume(TestEvent)
+        assertEquals(StateC, testObject.currentState.id)
+    }
+    //endregion
+
 }

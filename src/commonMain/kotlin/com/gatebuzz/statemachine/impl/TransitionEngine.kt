@@ -69,7 +69,6 @@ internal suspend fun Graph.moveDirectly(node: Node, trigger: Event?): State {
     return node.id
 }
 
-
 internal suspend fun Graph.transitionTo(node: Node, trigger: Event? = null): State? {
     val validNode = findNode(node.id) ?: return null
     return doTransition(validNode, trigger)

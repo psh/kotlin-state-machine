@@ -1,26 +1,13 @@
 [versions]
 stateMachineVersion = "0.5.0"
-
 coroutines = "1.6.4"
 turbine = "0.9.0"
-mockk = "1.12.1"
-reflect = "1.5.10"
-junit = "4.13.2"
-retrofit = "2.9.0"
 
 [libraries]
 kotlin-state-machine = { module = "com.gatebuzz:kotlin-state-machine", version.ref = "stateMachineVersion" }
-jvm-kotlin-state-machine = { module = "com.gatebuzz:kotlin-state-machine-jvm", version.ref = "stateMachineVersion" }
 kotlin-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlin-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
-jvm-kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "reflect" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
-mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
-junit = { module = "junit:junit", version.ref = "junit" }
-retrofit-core = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
-retrofit-scalars = { module = "com.squareup.retrofit2:converter-scalars", version.ref = "retrofit" }
 
 [bundles]
 test = ["kotlin-coroutines-test", "turbine"]
-jvm-test = ["junit", "kotlin-coroutines-test", "turbine", "jvm-kotlin-reflect"]
-retrofit = ["retrofit-core", "retrofit-scalars"]

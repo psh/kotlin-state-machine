@@ -20,7 +20,8 @@ sealed class MachineState {
             edge = Edge(
                 Node(edge.first),
                 Node(edge.second)
-            ), trigger = trigger
+            ),
+            trigger = trigger
         )
     }
 

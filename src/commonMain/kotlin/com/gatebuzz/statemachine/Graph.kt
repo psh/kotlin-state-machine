@@ -106,4 +106,3 @@ data class Edge constructor(val from: Node, val to: Node) {
 fun interface EdgeVisitor {
     fun accept(edge: Pair<State, State>)
 }
-

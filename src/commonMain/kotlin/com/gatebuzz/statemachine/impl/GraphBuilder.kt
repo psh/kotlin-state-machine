@@ -1,13 +1,10 @@
 @file:Suppress("unused")
 
-package com.gatebuzz.statemachine
+package com.gatebuzz.statemachine.impl
 
+import com.gatebuzz.statemachine.*
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-
-fun graph(initBlock: GraphBuilder.() -> Unit): Graph {
-    return GraphBuilder().apply(initBlock).build()
-}
 
 @DslMarker
 @InternalApi
@@ -65,7 +62,7 @@ class GraphBuilder {
             sb.events.forEach { e ->
                 with(e.value.build(from, allNodes)) {
                     add(this)
-                    addEvent(e.key, this)
+                    this.from.edgeTriggers[e.key] = this
                 }
             }
         }
@@ -161,4 +158,20 @@ class EdgeBuilder(var destination: State? = null) {
             action = transitionAction
         }
     }
+}
+
+internal fun Graph.add(state: State) {
+    nodes.add(Node(state))
+}
+
+internal fun Graph.add(node: Node) {
+    nodes.add(node)
+}
+
+internal fun Graph.add(edge: Pair<State, State>) {
+    edges.add(Edge(Node(edge.first), Node(edge.second)))
+}
+
+internal fun Graph.add(edge: Edge) {
+    edges.add(edge)
 }

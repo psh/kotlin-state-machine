@@ -4,6 +4,7 @@ import com.gatebuzz.statemachine.MachineState.Dwelling
 import com.gatebuzz.statemachine.TestEvents.OtherTestEvent
 import com.gatebuzz.statemachine.TestEvents.TestEvent
 import com.gatebuzz.statemachine.TestState.*
+import com.gatebuzz.statemachine.impl.add
 import com.gatebuzz.verification.TestActionResult
 import com.gatebuzz.verification.TestEdgeVisitor
 import com.gatebuzz.verification.TestStateVisitor
@@ -120,7 +121,8 @@ class GraphBuilderTest {
             add(StateA)
             add(StateB)
             add(StateA to StateB)
-            addEvent(TestEvent, Edge(StateA to StateB))
+            val edge = Edge(StateA to StateB)
+            edge.from.edgeTriggers[TestEvent] = edge
         }
 
         testObject.start()

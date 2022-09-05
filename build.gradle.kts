@@ -16,8 +16,8 @@ repositories {
 }
 
 apiValidation {
-    nonPublicMarkers.add("com.gatebuzz.statemachine.InternalApi")
-    ignoredClasses.add("com.gatebuzz.statemachine.InternalApi")
+    nonPublicMarkers.add("com.gatebuzz.statemachine.impl.InternalApi")
+    ignoredClasses.add("com.gatebuzz.statemachine.impl.InternalApi")
 }
 
 kotlin {

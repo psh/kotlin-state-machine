@@ -2,6 +2,7 @@ package com.gatebuzz.statemachine
 
 import app.cash.turbine.test
 import com.gatebuzz.statemachine.TestState.*
+import com.gatebuzz.statemachine.impl.*
 import com.gatebuzz.verification.TestDecision
 import com.gatebuzz.verification.TestEdgeVisitor
 import com.gatebuzz.verification.TestStateVisitor
@@ -389,7 +390,7 @@ class GraphTest {
             add(nodeA)
             add(nodeB)
             add(edgeAB)
-            addEvent(event, edgeAB)
+            edgeAB.from.edgeTriggers[event] = edgeAB
         }
         testObject.start()
 
@@ -419,7 +420,7 @@ class GraphTest {
             add(nodeB)
             add(edgeAB)
             add(edgeBA)
-            addEvent(event, edgeBA)
+            edgeBA.from.edgeTriggers[event] = edgeBA
         }
         testObject.start()
 
@@ -437,7 +438,7 @@ class GraphTest {
             add(nodeA)
             add(nodeB)
             add(edgeAB)
-            addEvent(event, edgeAB)
+            edgeAB.from.edgeTriggers[event] = edgeAB
         }
 
         testObject.observeStateChanges().test {
@@ -481,7 +482,8 @@ class GraphTest {
             add(nodeA)
             add(nodeB)
             add(nodeC)
-            addEvent(TestEvents.OtherTestEvent, Edge(nodeB, nodeC))
+            val edge = Edge(nodeB, nodeC)
+            edge.from.edgeTriggers[TestEvents.OtherTestEvent] = edge
         }
         testObject.start()
 
@@ -514,7 +516,8 @@ class GraphTest {
             add(nodeA)
             add(nodeB)
             add(nodeC)
-            addEvent(TestEvents.OtherTestEvent, Edge(StateB to StateC))
+            val edge = Edge(StateB to StateC)
+            edge.from.edgeTriggers[TestEvents.OtherTestEvent] = edge
         }
         testObject.start()
 

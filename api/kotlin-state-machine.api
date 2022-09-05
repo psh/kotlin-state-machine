@@ -7,6 +7,30 @@ public abstract interface class com/gatebuzz/statemachine/Decision {
 	public abstract fun decide (Lcom/gatebuzz/statemachine/State;Lcom/gatebuzz/statemachine/Event;)Lcom/gatebuzz/statemachine/Event;
 }
 
+public final class com/gatebuzz/statemachine/Edge {
+	public fun <init> (Lcom/gatebuzz/statemachine/Node;Lcom/gatebuzz/statemachine/Node;)V
+	public fun <init> (Lkotlin/Pair;)V
+	public final fun component1 ()Lcom/gatebuzz/statemachine/Node;
+	public final fun component2 ()Lcom/gatebuzz/statemachine/Node;
+	public final fun copy (Lcom/gatebuzz/statemachine/Node;Lcom/gatebuzz/statemachine/Node;)Lcom/gatebuzz/statemachine/Edge;
+	public static synthetic fun copy$default (Lcom/gatebuzz/statemachine/Edge;Lcom/gatebuzz/statemachine/Node;Lcom/gatebuzz/statemachine/Node;ILjava/lang/Object;)Lcom/gatebuzz/statemachine/Edge;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAction ()Lkotlin/jvm/functions/Function3;
+	public final fun getFrom ()Lcom/gatebuzz/statemachine/Node;
+	public final fun getOnEnter ()Lcom/gatebuzz/statemachine/EdgeVisitor;
+	public final fun getOnExit ()Lcom/gatebuzz/statemachine/EdgeVisitor;
+	public final fun getTo ()Lcom/gatebuzz/statemachine/Node;
+	public fun hashCode ()I
+	public final fun setAction (Lkotlin/jvm/functions/Function3;)V
+	public final fun setOnEnter (Lcom/gatebuzz/statemachine/EdgeVisitor;)V
+	public final fun setOnExit (Lcom/gatebuzz/statemachine/EdgeVisitor;)V
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/gatebuzz/statemachine/EdgeVisitor {
+	public abstract fun accept (Lkotlin/Pair;)V
+}
+
 public abstract interface class com/gatebuzz/statemachine/Event {
 }
 
@@ -15,6 +39,7 @@ public final class com/gatebuzz/statemachine/Graph {
 	public final fun consume (Lcom/gatebuzz/statemachine/Event;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getCurrentState ()Lcom/gatebuzz/statemachine/MachineState;
+	public final fun getCurrentStateName ()Ljava/lang/String;
 	public final fun getDispatcher ()Lkotlinx/coroutines/CoroutineDispatcher;
 	public final fun getInitialState ()Lcom/gatebuzz/statemachine/MachineState;
 	public fun hashCode ()I
@@ -24,11 +49,12 @@ public final class com/gatebuzz/statemachine/Graph {
 	public final fun setInitialState (Lcom/gatebuzz/statemachine/MachineState;)V
 	public final fun start (Lcom/gatebuzz/statemachine/MachineState;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun start$default (Lcom/gatebuzz/statemachine/Graph;Lcom/gatebuzz/statemachine/MachineState;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+	public fun toString ()Ljava/lang/String;
 	public final fun transitionTo (Lcom/gatebuzz/statemachine/State;Lcom/gatebuzz/statemachine/Event;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun transitionTo$default (Lcom/gatebuzz/statemachine/Graph;Lcom/gatebuzz/statemachine/State;Lcom/gatebuzz/statemachine/Event;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
-public final class com/gatebuzz/statemachine/GraphBuilderKt {
+public final class com/gatebuzz/statemachine/GraphKt {
 	public static final fun graph (Lkotlin/jvm/functions/Function1;)Lcom/gatebuzz/statemachine/Graph;
 }
 
@@ -50,12 +76,16 @@ public final class com/gatebuzz/statemachine/MachineState$CompoundState : com/ga
 }
 
 public final class com/gatebuzz/statemachine/MachineState$Dwelling : com/gatebuzz/statemachine/MachineState {
+	public fun <init> (Lcom/gatebuzz/statemachine/Node;Lcom/gatebuzz/statemachine/State;)V
+	public synthetic fun <init> (Lcom/gatebuzz/statemachine/Node;Lcom/gatebuzz/statemachine/State;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun <init> (Lcom/gatebuzz/statemachine/State;)V
+	public final fun component1 ()Lcom/gatebuzz/statemachine/Node;
 	public final fun component2 ()Lcom/gatebuzz/statemachine/State;
 	public final fun copy (Lcom/gatebuzz/statemachine/Node;Lcom/gatebuzz/statemachine/State;)Lcom/gatebuzz/statemachine/MachineState$Dwelling;
 	public static synthetic fun copy$default (Lcom/gatebuzz/statemachine/MachineState$Dwelling;Lcom/gatebuzz/statemachine/Node;Lcom/gatebuzz/statemachine/State;ILjava/lang/Object;)Lcom/gatebuzz/statemachine/MachineState$Dwelling;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getId ()Lcom/gatebuzz/statemachine/State;
+	public final fun getNode ()Lcom/gatebuzz/statemachine/Node;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -78,6 +108,8 @@ public final class com/gatebuzz/statemachine/MachineState$InactiveState : com/ga
 }
 
 public final class com/gatebuzz/statemachine/MachineState$Traversing : com/gatebuzz/statemachine/MachineState {
+	public fun <init> (Lcom/gatebuzz/statemachine/Edge;Lcom/gatebuzz/statemachine/State;Lcom/gatebuzz/statemachine/Event;)V
+	public synthetic fun <init> (Lcom/gatebuzz/statemachine/Edge;Lcom/gatebuzz/statemachine/State;Lcom/gatebuzz/statemachine/Event;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component2 ()Lcom/gatebuzz/statemachine/State;
 	public final fun component3 ()Lcom/gatebuzz/statemachine/Event;
 	public final fun copy (Lcom/gatebuzz/statemachine/Edge;Lcom/gatebuzz/statemachine/State;Lcom/gatebuzz/statemachine/Event;)Lcom/gatebuzz/statemachine/MachineState$Traversing;
@@ -89,10 +121,18 @@ public final class com/gatebuzz/statemachine/MachineState$Traversing : com/gateb
 	public fun toString ()Ljava/lang/String;
 }
 
-public abstract interface class com/gatebuzz/statemachine/ResultEmitter {
-	public abstract fun failAndExit (Lcom/gatebuzz/statemachine/Event;)V
-	public abstract fun failure (Lcom/gatebuzz/statemachine/Event;)V
-	public abstract fun success (Lcom/gatebuzz/statemachine/Event;)V
+public final class com/gatebuzz/statemachine/Node {
+	public fun <init> (Lcom/gatebuzz/statemachine/State;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDecision ()Lcom/gatebuzz/statemachine/Decision;
+	public final fun getEdgeTriggers ()Ljava/util/Map;
+	public final fun getId ()Lcom/gatebuzz/statemachine/State;
+	public final fun getOnEnter ()Lcom/gatebuzz/statemachine/StateVisitor;
+	public final fun getOnExit ()Lcom/gatebuzz/statemachine/StateVisitor;
+	public fun hashCode ()I
+	public final fun setDecision (Lcom/gatebuzz/statemachine/Decision;)V
+	public final fun setOnEnter (Lcom/gatebuzz/statemachine/StateVisitor;)V
+	public final fun setOnExit (Lcom/gatebuzz/statemachine/StateVisitor;)V
 }
 
 public abstract interface class com/gatebuzz/statemachine/State {

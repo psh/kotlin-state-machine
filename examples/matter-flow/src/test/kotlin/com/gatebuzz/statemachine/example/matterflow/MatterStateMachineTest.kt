@@ -1,10 +1,11 @@
-package com.gatebuzz.statemachine.example.matter
+package com.gatebuzz.statemachine.example.matterflow
 
 import app.cash.turbine.test
+import com.gatebuzz.statemachine.MachineState
 import com.gatebuzz.statemachine.MachineState.Dwelling
 import com.gatebuzz.statemachine.MachineState.Traversing
-import com.gatebuzz.statemachine.example.matter.MatterEvent.*
-import com.gatebuzz.statemachine.example.matter.MatterState.*
+import com.gatebuzz.statemachine.example.matterflow.MatterEvent.*
+import com.gatebuzz.statemachine.example.matterflow.MatterState.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals

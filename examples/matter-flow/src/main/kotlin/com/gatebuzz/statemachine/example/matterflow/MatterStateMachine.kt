@@ -1,10 +1,8 @@
-package com.gatebuzz.statemachine.example.matter
+package com.gatebuzz.statemachine.example.matterflow
 
-import com.gatebuzz.statemachine.Event
-import com.gatebuzz.statemachine.State
-import com.gatebuzz.statemachine.example.matter.MatterEvent.*
-import com.gatebuzz.statemachine.example.matter.MatterState.*
-import com.gatebuzz.statemachine.graph
+import com.gatebuzz.statemachine.*
+import com.gatebuzz.statemachine.example.matterflow.MatterEvent.*
+import com.gatebuzz.statemachine.example.matterflow.MatterState.*
 import kotlinx.coroutines.runBlocking
 
 sealed class MatterState : State {

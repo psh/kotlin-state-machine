@@ -59,8 +59,4 @@ val stateMachine = graph {
 
 private fun Event?.name() = this!!::class.java.simpleName
 
-fun main() = runBlocking {
-    stateMachine.start()
-    stateMachine.consume(OnCallService)
-}
 

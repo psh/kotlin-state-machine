@@ -23,6 +23,11 @@ class Graph internal constructor(
     internal val stateObserver = MutableSharedFlow<State>()
     internal val machineStateObserver = MutableSharedFlow<MachineState>()
 
+    inline fun <reified T : State> observe(): Flow<T> {
+        @Suppress("UNCHECKED_CAST")
+        return observeState() as Flow<T>
+    }
+
     fun observeState(): Flow<State> = stateObserver
 
     fun observeStateChanges(): Flow<MachineState> = machineStateObserver

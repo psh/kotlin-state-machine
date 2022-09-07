@@ -1,5 +1,5 @@
 plugins {
-    kotlin("multiplatform") version "1.7.10"
+    kotlin("multiplatform") version "1.6.10"
     id("org.jlleitschuh.gradle.ktlint") version "10.2.1"
     id("maven-publish")
     id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.11.0"

@@ -111,6 +111,22 @@ class GraphTest {
     }
 
     @Test
+    fun graphWithOneNodeIsInactiveUntilStartedObservingTypeSafeState() = runTest {
+        val testObject = Graph().apply {
+            initialState = MachineState.Dwelling(nodeA)
+            add(nodeA)
+        }
+        assertEquals(MachineState.Inactive(), testObject.currentState)
+
+        testObject.observe<TestState>().test {
+            testObject.start()
+
+            assertEquals(MachineState.Dwelling(StateA), testObject.currentState)
+            assertEquals(StateA, awaitItem())
+        }
+    }
+
+    @Test
     fun graphWithOneNodeIsInactiveUntilStartedObservingMachineState() = runTest {
         val testObject = Graph().apply {
             initialState = MachineState.Dwelling(nodeA)
@@ -167,7 +183,7 @@ class GraphTest {
         }
         testObject.start()
 
-        testObject.observeState().test {
+        testObject.observe<TestState>().test {
             val newNode = testObject.transitionTo(StateC)
             assertNull(newNode)
             assertEquals(MachineState.Dwelling(StateA), testObject.currentState)
@@ -183,12 +199,14 @@ class GraphTest {
             add(nodeB)
         }
 
-        testObject.observeState().test {
+        testObject.observe<TestState>().test {
             testObject.start()
-            assertEquals(StateA, awaitItem())
+            val firstItem: TestState = awaitItem()
+            assertEquals(StateA, firstItem)
 
             testObject.transitionTo(StateB)
-            assertEquals(StateB, awaitItem())
+            val secondItem: TestState = awaitItem()
+            assertEquals(StateB, secondItem)
         }
     }
 

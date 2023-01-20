@@ -13,24 +13,25 @@ Some pointers to the layout of this project -
 * Examples use the library published to your `mavenLocal` repo to best simulate end-user usage scenarios.  Run the `publishToMavenLocal` gradle task before running the examples and all should be fine. 
 
 ## Roadmap
-* Version **0.1.0** 
+* ![Version 0.1](https://img.shields.io/badge/version-0.1-green )
   * introduced the state machine and its declarative DSL for defining states and transitions
   * built as a traditional JVM library. 
-* Version **0.2.0**
+* ![Version 0.2](https://img.shields.io/badge/version-0.2-green)
     * Embraced Kotlin multiplatform  
     * Use the Gradle version catalog to simplify the build
     * NOTE: this library is built against the **NEW** native memory module introduced in Kotlin 1.6.10
-* Version **0.3.0** 
+* ![Version 0.3](https://img.shields.io/badge/version-0.3-green)
   * Execute state transitions as coroutines
-* Version **0.4.0**
+* ![Version 0.4](https://img.shields.io/badge/version-0.4-green)
   * Move the tests into `commonTest` so they can be run across all platforms
   * Fix reported bugs (thanks Jigar for reporting the issue, and steps to reproduce it)
-* Version **0.5.0**
+* ![Version 0.5](https://img.shields.io/badge/version-0.5-green)
   * Full DSL / API review to ensure that it makes sense
   * Work through the callback and coroutines API to make sure that it also makes sense
-* Version **0.6.0**
-  * Overhaul of the documentation to reflect current state
-* Publish the library to Maven Central 
+* ![Version 0.6](https://img.shields.io/badge/version-0.6-green) ![Current](https://img.shields.io/badge/-Current-orange)
+  * **Overhaul of the documentation to reflect current state**
+  * **Compose integrations**
+* (later)Publish the library to Maven Central 
 
 Somewhere along the way, there need to be additional examples written, for native, Android and iOS.
 

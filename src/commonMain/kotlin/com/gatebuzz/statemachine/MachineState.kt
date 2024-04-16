@@ -6,12 +6,11 @@ sealed class MachineState {
 
     data class Inactive(override val id: State = InactiveState) : MachineState()
 
-    data class Dwelling constructor(val node: Node, override val id: State = node.id) :
-        MachineState() {
+    data class Dwelling(val node: Node, override val id: State = node.id) : MachineState() {
         constructor(state: State) : this(Node(state))
     }
 
-    data class Traversing constructor(
+    data class Traversing(
         val edge: Edge,
         override val id: State = CompoundState(edge.from.id, edge.to.id),
         val trigger: Event? = null

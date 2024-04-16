@@ -1,3 +1,5 @@
+@file:Suppress("MemberVisibilityCanBePrivate")
+
 package com.gatebuzz.verification
 
 import com.gatebuzz.statemachine.Decision

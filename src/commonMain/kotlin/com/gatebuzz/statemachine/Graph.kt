@@ -100,7 +100,7 @@ class Node(val id: State) {
     override fun hashCode(): Int = id.hashCode()
 }
 
-data class Edge constructor(val from: Node, val to: Node) {
+data class Edge(val from: Node, val to: Node) {
     constructor(edge: Pair<State, State>) : this(Node(edge.first), Node(edge.second))
 
     var onEnter: EdgeVisitor = EdgeVisitor { }

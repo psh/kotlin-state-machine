@@ -40,13 +40,13 @@ class ReuseEventsTest {
     }
 
     sealed class ReusedStates : State {
-        object One : ReusedStates()
-        object Two : ReusedStates()
-        object Three : ReusedStates()
-        object Four : ReusedStates()
+        data object One : ReusedStates()
+        data object Two : ReusedStates()
+        data object Three : ReusedStates()
+        data object Four : ReusedStates()
     }
 
     sealed class ReusedEvents : Event {
-        object Next : ReusedEvents()
+        data object Next : ReusedEvents()
     }
 }

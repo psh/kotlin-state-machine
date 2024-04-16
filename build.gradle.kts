@@ -1,12 +1,14 @@
 plugins {
-    kotlin("multiplatform") version "1.6.10"
+    kotlin("multiplatform") version "1.9.10"
     id("org.jlleitschuh.gradle.ktlint") version "10.2.1"
     id("maven-publish")
     id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.11.0"
 }
 
-val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
-val dependencyProvider = versionCatalog.findLibrary("kotlin-state-machine").get()
+val dependencyProvider = extensions.getByType<VersionCatalogsExtension>()
+    .named("libs")
+    .findLibrary("kotlin-state-machine")
+    .get()
 group = dependencyProvider.get().module.group
 version = libs.versions.stateMachineVersion.get()
 
@@ -23,15 +25,7 @@ apiValidation {
 kotlin {
     ios()
 
-    jvm {
-        compilations.all {
-            kotlinOptions.jvmTarget = "10"
-        }
-        withJava()
-        testRuns["test"].executionTask.configure {
-            useJUnit()
-        }
-    }
+    jvm()
 
     val hostOs = System.getProperty("os.name")
     val isMingwX64 = hostOs.startsWith("Windows")
